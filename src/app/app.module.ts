@@ -23,6 +23,7 @@ import { SunriseModule } from './sunrise/sunrise.module';
     AppRoutingModule,
     LedDetailComponentModule,
     SettingsViewModule,
+    SunriseModule,
     BrowserAnimationsModule,
     MatButtonModule,
     HttpClientModule,

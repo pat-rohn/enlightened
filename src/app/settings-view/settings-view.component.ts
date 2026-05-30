@@ -200,17 +200,6 @@ export class SettingsViewComponent implements OnInit {
     return newKnownDevices
   }
 
-  handleChange(ev: any) {
-    let device = this.findDevice(ev.target.value);
-    if (device == null) {
-      console.error("Device unknown: " + ev.target.value);
-    } else {
-      //this.connectedDevice = device
-      this.ledcontrolService.setDevice(this.connectedDevice)
-      this.clickedRefreshDevice();
-    }
-  }
-
   public alertButtons = [
     {
       text: 'No',
@@ -224,10 +213,6 @@ export class SettingsViewComponent implements OnInit {
       },
     },
   ];
-
-  setResult(ev: any) {
-    console.warn("reset device" + JSON.stringify(ev));
-  }
 
   private findDevice(name: string) {
 

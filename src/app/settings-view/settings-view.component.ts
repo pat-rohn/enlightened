@@ -119,20 +119,6 @@ export class SettingsViewComponent implements OnInit, OnDestroy {
       this.deviceConfig.WiFiName = "Enlighted";
       this.deviceConfig.WiFiPassword = "enlighten-me";
       this.deviceConfig.IsOfflineMode = true;
-      /*this.deviceSettings.FindSensors = false;
-      this.deviceSettings.SensorID = "9999";
-      this.deviceSettings.NumberOfLEDs = -1;
-      this.deviceSettings.DhtPin = -1;
-      this.deviceSettings.WindSensorPin = -1;
-      this.deviceSettings.RainfallSensorPin = -1;
-      this.deviceSettings.LEDPin = -1;
-      this.deviceSettings.Button1 = -1;
-      this.deviceSettings.Button2 = -1;
-      this.deviceSettings.ShowWebpage = true;
-      this.deviceSettings.UseMQTT = true;
-      this.deviceSettings.MQTTTopic = "";
-      this.deviceSettings.MQTTPort = -1;
-      */
     }
 
     this.ledcontrolService.applyDeviceSettings(this.deviceConfig!).pipe(

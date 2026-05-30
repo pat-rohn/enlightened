@@ -68,7 +68,7 @@ export class LedcontrolService {
 
     return this.http.get<any>(url, {
       headers: new HttpHeaders({
-        'Content-Type': 'application/json '
+        'Content-Type': 'application/json'
       })
     }).pipe(
       tap(_ => console.log(`updated led `)),

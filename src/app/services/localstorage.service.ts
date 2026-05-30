@@ -45,9 +45,10 @@ export class LocalstorageService {
   }
 
   async writeSettings(settings: Settings) {
-    console.log("write settings:" + JSON.stringify(this.settings));
+    console.log("write settings:" + JSON.stringify(settings));
     await Preferences.set({ key: this.settingKey, value: JSON.stringify(settings) })
-    this.ledControlService.setDevice(this.settings.CurrentDevice);
+    this.settings = settings;
+    this.ledControlService.setDevice(settings.CurrentDevice);
   }
 
   getSettings() {

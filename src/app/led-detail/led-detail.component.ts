@@ -333,57 +333,42 @@ export class LedDetailComponent implements OnInit {
 
   onChangeColor() {
     this.isReady = false;
-    this.ledcontrolService.getLedStatus()
-      .subscribe(ledstatus => {
-        let color = Math.floor(Math.random() * 6)
-        switch (color) {
-          case 0:
-            console.log("red");
-            this.ledStatus!.message = "red"
-            ledstatus.Red = 100;
-            ledstatus.Blue = 0;
-            ledstatus.Green = 0;
-            break;
-          case 1:
-            console.log("blue");
-            this.ledStatus!.message = "blue"
-            ledstatus.Red = 0;
-            ledstatus.Blue = 100;
-            ledstatus.Green = 0;
-            break;
-          case 2:
-            console.log("green");
-            this.ledStatus!.message = "green"
-            ledstatus.Red = 0;
-            ledstatus.Blue = 0;
-            ledstatus.Green = 100;
-            break;
-          case 3:
-            console.log("bg");
-            this.ledStatus!.message = "bg"
-            ledstatus.Red = 0;
-            ledstatus.Blue = 50;
-            ledstatus.Green = 50;
-            break;
-          case 4:
-            console.log("rg");
-            this.ledStatus!.message = "rg"
-            ledstatus.Red = 50;
-            ledstatus.Blue = 0;
-            ledstatus.Green = 50;
-            break;
-          case 5:
-            console.log("rb");
-            this.ledStatus!.message = "rb"
-            ledstatus.Red = 50;
-            ledstatus.Blue = 50;
-            ledstatus.Green = 0;
-            break;
-        }
-
-        this.applyLEDStatus(ledstatus)
-        this.onSave()
-      });
+    const ledstatus = this.getJson();
+    const color = Math.floor(Math.random() * 6);
+    switch (color) {
+      case 0:
+        console.log("red");
+        this.ledStatus!.message = "red";
+        ledstatus.Red = 100; ledstatus.Blue = 0; ledstatus.Green = 0;
+        break;
+      case 1:
+        console.log("blue");
+        this.ledStatus!.message = "blue";
+        ledstatus.Red = 0; ledstatus.Blue = 100; ledstatus.Green = 0;
+        break;
+      case 2:
+        console.log("green");
+        this.ledStatus!.message = "green";
+        ledstatus.Red = 0; ledstatus.Blue = 0; ledstatus.Green = 100;
+        break;
+      case 3:
+        console.log("bg");
+        this.ledStatus!.message = "bg";
+        ledstatus.Red = 0; ledstatus.Blue = 50; ledstatus.Green = 50;
+        break;
+      case 4:
+        console.log("rg");
+        this.ledStatus!.message = "rg";
+        ledstatus.Red = 50; ledstatus.Blue = 0; ledstatus.Green = 50;
+        break;
+      case 5:
+        console.log("rb");
+        this.ledStatus!.message = "rb";
+        ledstatus.Red = 50; ledstatus.Blue = 50; ledstatus.Green = 0;
+        break;
+    }
+    this.applyLEDStatus(ledstatus);
+    this.onSave();
   }
 
   compareFn(e1: LabeledLedMode, e2: LabeledLedMode): boolean {

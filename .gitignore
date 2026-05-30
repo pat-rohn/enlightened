@@ -30,5 +30,10 @@ npm-debug.log*
 /www
 .angular/*
 android
+android.backup
 
 DevProfile*
+.nx/cache
+.vscode/typings/cordova-ionic/plugins/keyboard.d.ts
+.vscode/typings/jquery/jquery.d.ts
+typings/cordova-typings.d.ts

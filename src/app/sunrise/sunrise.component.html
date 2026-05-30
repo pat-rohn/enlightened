@@ -23,7 +23,8 @@
         type="text"
         label=""
         ngDefaultControl
-        [(ngModel)]="currentTime"
+        [ngModel]="currentTime"
+        [readonly]="true"
         text-middle
 
       >
@@ -61,6 +62,7 @@
               slot="end"
               ngDefaultControl
               [(ngModel)]="sunriseSettings.Monday.AlarmTime"
+              placeholder="HH:MM"
               text-right
 
             >
@@ -80,6 +82,7 @@
               slot="end"
               ngDefaultControl
               [(ngModel)]="sunriseSettings.Tuesday.AlarmTime"
+              placeholder="HH:MM"
               text-right
 
             >
@@ -99,6 +102,7 @@
               slot="end"
               ngDefaultControl
               [(ngModel)]="sunriseSettings.Wednesday.AlarmTime"
+              placeholder="HH:MM"
               text-right
 
             >
@@ -118,6 +122,7 @@
               slot="end"
               ngDefaultControl
               [(ngModel)]="sunriseSettings.Thursday.AlarmTime"
+              placeholder="HH:MM"
               text-right
 
             >
@@ -138,6 +143,7 @@
               slot="end"
               ngDefaultControl
               [(ngModel)]="sunriseSettings.Friday.AlarmTime"
+              placeholder="HH:MM"
               text-right
 
             >
@@ -158,6 +164,7 @@
               slot="end"
               ngDefaultControl
               [(ngModel)]="sunriseSettings.Saturday.AlarmTime"
+              placeholder="HH:MM"
               text-right
 
             >
@@ -178,6 +185,7 @@
               slot="end"
               ngDefaultControl
               [(ngModel)]="sunriseSettings.Sunday.AlarmTime"
+              placeholder="HH:MM"
               text-right
 
             >

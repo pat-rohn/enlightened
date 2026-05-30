@@ -1,5 +1,5 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
-import { Subject } from 'rxjs';
+import { Subject, firstValueFrom } from 'rxjs';
 import { switchMap, takeUntil } from 'rxjs/operators';
 import { DeviceSettings, SunriseSettings, DaySetting, Settings } from '../settings'
 import { LocalstorageService } from '../services/localstorage.service'
@@ -20,6 +20,7 @@ export class SunriseComponent implements OnInit, OnDestroy {
   deviceSettings?: DeviceSettings;
   currentTime = "-";
   enableSave = true;
+  private savedSunriseJson?: string;
 
 
   constructor(
@@ -43,29 +44,19 @@ export class SunriseComponent implements OnInit, OnDestroy {
 
   async ngOnInit() {
     console.log("init view comp");
-    await this.localStorage.readSettings().then(
-      res => {
-        this.settings = res
-        this.ledcontrolService.setDevice(this.settings.CurrentDevice)
-        this.ledcontrolService.getDeviceSettings().subscribe(
-          {
-            next: (res) => {
-              this.sunriseSettings = res.SunriseSettings;
-              this.deviceSettings = res;
-            },
-            error: (e) => console.error(e),
-            complete: () => console.info('complete') 
-        })
-        this.ledcontrolService.getTime().subscribe(
-          {
-           next : (res) => {
-              this.currentTime = res;
-            },
-            error: (e) => console.error(e),
-            complete: () => console.info('complete') 
-        })
-      }
-    );
+    const resSettings = await this.localStorage.readSettings();
+    this.settings = resSettings;
+    this.ledcontrolService.setDevice(this.settings.CurrentDevice);
+    try {
+      const res = await firstValueFrom(this.ledcontrolService.getDeviceSettings());
+      this.sunriseSettings = res.SunriseSettings;
+      this.deviceSettings = res;
+      this.snapshotSavedSunrise();
+    } catch (e) { console.error(e); }
+
+    try {
+      this.currentTime = await firstValueFrom(this.ledcontrolService.getTime());
+    } catch (e) { console.error(e); }
   }
 
   handleRefresh(event: any) {
@@ -78,35 +69,81 @@ export class SunriseComponent implements OnInit, OnDestroy {
 
 
   async clickedRefresh() {
-    this.enableSave = false;
-    this.ledcontrolService.getDeviceSettings().subscribe(res => {
-      this.sunriseSettings = res.SunriseSettings
-      this.deviceSettings = res;
-      console.log(JSON.stringify(res))
-      this.enableSave = true;
-    });
-    this.ledcontrolService.getTime().subscribe(
-      {
-        next: (res) => {
-          this.currentTime = res;
-          console.log("Current Time " + res)
+    if (this.hasUnsavedChanges()) {
+      const ok = confirm('You have unsaved changes. Refresh will discard them. Continue?');
+      if (!ok) return;
+    }
 
-        },
-        error: (e) => console.error(e),
-        complete: () => console.info('complete') 
-    })
+    this.enableSave = false;
+    try {
+      const res = await firstValueFrom(this.ledcontrolService.getDeviceSettings());
+      this.sunriseSettings = res.SunriseSettings;
+      this.deviceSettings = res;
+      this.snapshotSavedSunrise();
+      console.log(JSON.stringify(res));
+    } catch (e) { console.error(e); }
+
+    try {
+      this.currentTime = await firstValueFrom(this.ledcontrolService.getTime());
+      console.log('Current Time ' + this.currentTime);
+    } catch (e) { console.error(e); }
+
+    this.enableSave = true;
   }
 
   async clickedSave() {
     this.enableSave = false;
     console.log(JSON.stringify(this.deviceSettings));
-    this.ledcontrolService.applyDeviceSettings(this.deviceSettings!).pipe(
-      switchMap(() => this.ledcontrolService.getDeviceSettings())
-    ).subscribe(res => {
-      this.deviceSettings = res;
-      this.sunriseSettings = res.SunriseSettings;
-      this.enableSave = true;
-    });
+    try {
+      await firstValueFrom(this.ledcontrolService.applyDeviceSettings(this.deviceSettings!));
+
+      // Poll device for updated settings — some microcontrollers take time to write to flash.
+      const maxAttempts = 6;
+      const delayMs = 500;
+      let lastRes: any = undefined;
+      for (let i = 0; i < maxAttempts; i++) {
+        await new Promise(r => setTimeout(r, delayMs));
+        try {
+          lastRes = await firstValueFrom(this.ledcontrolService.getDeviceSettings());
+          if (JSON.stringify(lastRes.SunriseSettings) === JSON.stringify(this.deviceSettings!.SunriseSettings)) {
+            this.deviceSettings = lastRes;
+            this.sunriseSettings = lastRes.SunriseSettings;
+            this.snapshotSavedSunrise();
+            break;
+          }
+        } catch (err) {
+          console.error(err);
+        }
+      }
+
+      if (!this.deviceSettings && lastRes) {
+        this.deviceSettings = lastRes;
+        this.sunriseSettings = lastRes.SunriseSettings;
+        this.snapshotSavedSunrise();
+      }
+
+    } catch (e) {
+      console.error(e);
+    }
+
+    this.enableSave = true;
+  }
+
+  private snapshotSavedSunrise() {
+    try {
+      this.savedSunriseJson = JSON.stringify(this.sunriseSettings || {});
+    } catch (e) {
+      this.savedSunriseJson = undefined;
+    }
+  }
+
+  private hasUnsavedChanges(): boolean {
+    if (!this.savedSunriseJson) return false;
+    try {
+      return JSON.stringify(this.sunriseSettings || {}) !== this.savedSunriseJson;
+    } catch (e) {
+      return false;
+    }
   }
 
 }

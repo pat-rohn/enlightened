@@ -1,5 +1,6 @@
-import { Component, OnInit } from '@angular/core';
-import { switchMap } from 'rxjs/operators';
+import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Subject } from 'rxjs';
+import { switchMap, takeUntil } from 'rxjs/operators';
 import { DeviceSettings, Settings, Device } from '../settings';
 import { LocalstorageService } from '../services/localstorage.service'
 import { LedcontrolService } from '../services/ledcontrol.service';
@@ -10,7 +11,8 @@ import { ActivatedRoute } from '@angular/router';
   templateUrl: './settings-view.component.html',
   styleUrls: ['./settings-view.component.scss'],
 })
-export class SettingsViewComponent implements OnInit {
+export class SettingsViewComponent implements OnInit, OnDestroy {
+  private readonly destroy$ = new Subject<void>();
 
   settings: Settings = this.localStorage.settings;
   connectedDevice: Device = { Name: "init", Address: "0" }
@@ -21,14 +23,17 @@ export class SettingsViewComponent implements OnInit {
     private localStorage: LocalstorageService,
     private ledcontrolService: LedcontrolService,
     private activeRoute: ActivatedRoute) {
-    this.activeRoute.params.subscribe(params => {
+    this.activeRoute.params.pipe(takeUntil(this.destroy$)).subscribe(params => {
       console.log(params["id"]);
-      //if (params["id"] == "Settings") {
       if (this.deviceConfig != null) {
         this.clickedRefreshDevice();
       }
-      //}
     });
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   async ngOnInit() {

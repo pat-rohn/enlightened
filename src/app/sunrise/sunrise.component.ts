@@ -1,5 +1,6 @@
-import { Component, OnInit } from '@angular/core';
-import { switchMap } from 'rxjs/operators';
+import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Subject } from 'rxjs';
+import { switchMap, takeUntil } from 'rxjs/operators';
 import { DeviceSettings, SunriseSettings, DaySetting, Settings } from '../settings'
 import { LocalstorageService } from '../services/localstorage.service'
 import { LedcontrolService } from '../services/ledcontrol.service';
@@ -11,7 +12,8 @@ import { ActivatedRoute } from '@angular/router';
   templateUrl: './sunrise.component.html',
   styleUrls: ['./sunrise.component.scss'],
 })
-export class SunriseComponent implements OnInit {
+export class SunriseComponent implements OnInit, OnDestroy {
+  private readonly destroy$ = new Subject<void>();
 
   settings?: Settings;
   sunriseSettings?: SunriseSettings;
@@ -23,16 +25,19 @@ export class SunriseComponent implements OnInit {
   constructor(
     private localStorage: LocalstorageService,
     private ledcontrolService: LedcontrolService,
-    private activatedRoute: ActivatedRoute) { 
-      this.activatedRoute.params.subscribe(params => {
+    private activatedRoute: ActivatedRoute) {
+      this.activatedRoute.params.pipe(takeUntil(this.destroy$)).subscribe(params => {
         console.log(params["id"]);
-        //if (params["id"] == "Sunrise") {
-          if (this.deviceSettings != null) {
-            this.clickedRefresh();
-          }
-        //}
+        if (this.deviceSettings != null) {
+          this.clickedRefresh();
+        }
       });
     }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
 
 
 

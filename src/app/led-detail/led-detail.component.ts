@@ -1,5 +1,6 @@
-import { Component, OnInit } from '@angular/core';
-import { switchMap } from 'rxjs/operators';
+import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Subject } from 'rxjs';
+import { switchMap, takeUntil } from 'rxjs/operators';
 
 import { ActivatedRoute } from '@angular/router'
 import { LedcontrolService } from '../services/ledcontrol.service';
@@ -16,7 +17,8 @@ import { LocalstorageService } from '../services/localstorage.service';
   templateUrl: './led-detail.component.html',
   styleUrls: ['./led-detail.component.scss'],
 })
-export class LedDetailComponent implements OnInit {
+export class LedDetailComponent implements OnInit, OnDestroy {
+  private readonly destroy$ = new Subject<void>();
   ledStatusJson?: LEDStatusJSON;
   enableSaveButton: boolean = false
   selectedLevel: LightLevel = LIGHT_FIRST;
@@ -52,14 +54,17 @@ export class LedDetailComponent implements OnInit {
   constructor(private ledcontrolService: LedcontrolService,
     private localStorage: LocalstorageService,
     private activeRoute: ActivatedRoute) {
-    this.activeRoute.params.subscribe(params => {
+    this.activeRoute.params.pipe(takeUntil(this.destroy$)).subscribe(params => {
       console.log(JSON.stringify(params));
-      //if (params["id"] == "LedDetails") {
       if (this.deviceSettings != null) {
         this.onRefresh();
       }
-      //}
     });
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   async ngOnInit() {

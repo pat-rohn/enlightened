@@ -123,8 +123,8 @@ export class LedDetailComponent implements OnInit, OnDestroy {
 
   onSelectChange(value: LabeledLedMode): void {
     console.log("ion change");
-    this.isReady = false
-    var mode = value;
+    this.isReady = false;
+    const mode = value;
     if (this.ledStatus) {
       console.log("change mode");
       this.ledStatus.mode = mode;

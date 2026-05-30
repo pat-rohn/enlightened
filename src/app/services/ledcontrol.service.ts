@@ -1,4 +1,4 @@
-import { Injectable, Input } from '@angular/core';
+import { Injectable } from '@angular/core';
 import { Observable, of } from 'rxjs';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { catchError, timeout, tap, switchMap } from 'rxjs/operators';
@@ -103,7 +103,7 @@ export class LedcontrolService {
     return this.http.get(url, { responseType: 'text' }).pipe(
       timeout(1000),
       tap(_ => console.log('fetched device settings')),
-      catchError(this.handleError<string>('Get Device Settings')));
+      catchError(this.handleError<string>('Get Time')));
   }
 
   applyDeviceSettings(deviceSettings: DeviceSettings): Observable<any> {

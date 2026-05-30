@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { switchMap } from 'rxjs/operators';
 import { DeviceSettings, SunriseSettings, DaySetting, Settings } from '../settings'
 import { LocalstorageService } from '../services/localstorage.service'
 import { LedcontrolService } from '../services/ledcontrol.service';
@@ -93,13 +94,13 @@ export class SunriseComponent implements OnInit {
 
   async clickedSave() {
     this.enableSave = false;
-    console.log(JSON.stringify(this.deviceSettings))
-    this.ledcontrolService.applyDeviceSettings(this.deviceSettings!).subscribe(_ => {
-      this.ledcontrolService.getDeviceSettings().subscribe(res => {
-        this.deviceSettings = res;
-        this.sunriseSettings = res.SunriseSettings;
-        this.enableSave = true;
-      });
+    console.log(JSON.stringify(this.deviceSettings));
+    this.ledcontrolService.applyDeviceSettings(this.deviceSettings!).pipe(
+      switchMap(() => this.ledcontrolService.getDeviceSettings())
+    ).subscribe(res => {
+      this.deviceSettings = res;
+      this.sunriseSettings = res.SunriseSettings;
+      this.enableSave = true;
     });
   }
 

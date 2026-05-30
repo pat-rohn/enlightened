@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { switchMap } from 'rxjs/operators';
 
 import { ActivatedRoute } from '@angular/router'
 import { LedcontrolService } from '../services/ledcontrol.service';
@@ -65,23 +66,21 @@ export class LedDetailComponent implements OnInit {
     console.log("On init");
     this.settings = await this.localStorage.readSettings();
     this.ledcontrolService.setDevice(this.settings.CurrentDevice);
-    this.ledcontrolService.getDeviceSettings().subscribe(res => {
-      this.enableSaveButton = true
-      this.deviceSettings = res
-      this.ledcontrolService.getLedStatus().subscribe(
-        {
-          next: (ledJson) => {
-            console.log('Answer:' + JSON.stringify(ledJson));
-            this.applyLEDStatus(ledJson);
-          },
-          error: (error) => {
-            console.error('Observer got an error: ' + error)
-            this.isReady = false;
-          },
-          complete: () => {
-          }
-        }
-      )
+    this.ledcontrolService.getDeviceSettings().pipe(
+      switchMap(res => {
+        this.enableSaveButton = true;
+        this.deviceSettings = res;
+        return this.ledcontrolService.getLedStatus();
+      })
+    ).subscribe({
+      next: (ledJson) => {
+        console.log('Answer:' + JSON.stringify(ledJson));
+        this.applyLEDStatus(ledJson);
+      },
+      error: (error) => {
+        console.error('Observer got an error: ' + error);
+        this.isReady = false;
+      }
     });
 
     if (this.ledStatus != null) {
@@ -250,47 +249,43 @@ export class LedDetailComponent implements OnInit {
   }
 
   onButton1(): void {
-    this.isReady = false
-    this.ledcontrolService.pressButton("1").subscribe(res =>{
-      this.enableSaveButton = true
-      this.ledcontrolService.getLedStatus().subscribe(
-        {
-          next: (ledJson) => {
-            console.log('Answer:' + JSON.stringify(ledJson));
-            this.applyLEDStatus(ledJson);
-            this.isReady = true
-          },
-          error: (error) => {
-            console.error('Observer got an error: ' + error)
-            this.isReady = false;
-          },
-          complete: () => {
-          }
-        }
-      )
-    })
+    this.isReady = false;
+    this.ledcontrolService.pressButton("1").pipe(
+      switchMap(() => {
+        this.enableSaveButton = true;
+        return this.ledcontrolService.getLedStatus();
+      })
+    ).subscribe({
+      next: (ledJson) => {
+        console.log('Answer:' + JSON.stringify(ledJson));
+        this.applyLEDStatus(ledJson);
+        this.isReady = true;
+      },
+      error: (error) => {
+        console.error('Observer got an error: ' + error);
+        this.isReady = false;
+      }
+    });
   }
 
   onButton2(): void {
-    this.isReady = false
-    this.ledcontrolService.pressButton("2").subscribe(res =>{
-      this.enableSaveButton = true
-      this.ledcontrolService.getLedStatus().subscribe(
-        {
-          next: (ledJson) => {
-            console.log('Answer:' + JSON.stringify(ledJson));
-            this.applyLEDStatus(ledJson);
-            this.isReady = true
-          },
-          error: (error) => {
-            console.error('Observer got an error: ' + error)
-            this.isReady = false;
-          },
-          complete: () => {
-          }
-        }
-      )
-    })
+    this.isReady = false;
+    this.ledcontrolService.pressButton("2").pipe(
+      switchMap(() => {
+        this.enableSaveButton = true;
+        return this.ledcontrolService.getLedStatus();
+      })
+    ).subscribe({
+      next: (ledJson) => {
+        console.log('Answer:' + JSON.stringify(ledJson));
+        this.applyLEDStatus(ledJson);
+        this.isReady = true;
+      },
+      error: (error) => {
+        console.error('Observer got an error: ' + error);
+        this.isReady = false;
+      }
+    });
   }
 
   handleRefresh(event: any) {
@@ -303,31 +298,25 @@ export class LedDetailComponent implements OnInit {
   };
 
   async onRefresh() {
-    this.isReady = false
-    this.ledcontrolService.getDeviceSettings().subscribe(res => {
-      this.deviceSettings = res
-      this.ledcontrolService.getLedStatus().subscribe(
-        {
-          next: (ledJson) => {
-            console.log('Answer:' + JSON.stringify(ledJson));
-            this.applyLEDStatus(ledJson);
-            this.isReady = true
-          },
-          error: (error) => {
-            console.error('Observer got an error: ' + error)
-            this.ledStatus = {
-              red: 0,
-              green: 0,
-              blue: 0,
-              brightness: 0,
-              message: "No connection",
-              mode: LED_OFF
-            }
-          },
-          complete: () => {
-          }
-        }
-      )
+    this.isReady = false;
+    this.ledcontrolService.getDeviceSettings().pipe(
+      switchMap(res => {
+        this.deviceSettings = res;
+        return this.ledcontrolService.getLedStatus();
+      })
+    ).subscribe({
+      next: (ledJson) => {
+        console.log('Answer:' + JSON.stringify(ledJson));
+        this.applyLEDStatus(ledJson);
+        this.isReady = true;
+      },
+      error: (error) => {
+        console.error('Observer got an error: ' + error);
+        this.ledStatus = {
+          red: 0, green: 0, blue: 0, brightness: 0,
+          message: 'No connection', mode: LED_OFF
+        };
+      }
     });
   }
 

@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { switchMap } from 'rxjs/operators';
 import { DeviceSettings, Settings, Device } from '../settings';
 import { LocalstorageService } from '../services/localstorage.service'
 import { LedcontrolService } from '../services/ledcontrol.service';
@@ -83,20 +84,26 @@ export class SettingsViewComponent implements OnInit {
   }
 
   async clickedApplyDeviceConfig() {
-    console.log("Disable Save")
+    console.log("Disable Save");
     this.enableSave = false;
-    console.log(JSON.stringify(this.deviceConfig))
-    this.ledcontrolService.applyDeviceSettings(this.deviceConfig!).subscribe(_ => {
-      this.ledcontrolService.getDeviceSettings().subscribe(res => this.deviceConfig = res);
+    console.log(JSON.stringify(this.deviceConfig));
+    this.ledcontrolService.applyDeviceSettings(this.deviceConfig!).pipe(
+      switchMap(() => this.ledcontrolService.getDeviceSettings())
+    ).subscribe(res => {
+      this.deviceConfig = res;
+      this.enableSave = true;
     });
   }
 
   async clickedRestart() {
-    console.log("Restart")
+    console.log("Restart");
     this.enableSave = false;
-    console.log(JSON.stringify(this.deviceConfig))
-    this.ledcontrolService.restartDevice().subscribe(_ => {
-      this.ledcontrolService.getDeviceSettings().subscribe(res => this.deviceConfig = res);
+    console.log(JSON.stringify(this.deviceConfig));
+    this.ledcontrolService.restartDevice().pipe(
+      switchMap(() => this.ledcontrolService.getDeviceSettings())
+    ).subscribe(res => {
+      this.deviceConfig = res;
+      this.enableSave = true;
     });
   }
 
@@ -123,8 +130,10 @@ export class SettingsViewComponent implements OnInit {
       */
     }
 
-    this.ledcontrolService.applyDeviceSettings(this.deviceConfig!).subscribe(_ => {
-      this.ledcontrolService.getDeviceSettings().subscribe(res => this.deviceConfig = res);
+    this.ledcontrolService.applyDeviceSettings(this.deviceConfig!).pipe(
+      switchMap(() => this.ledcontrolService.getDeviceSettings())
+    ).subscribe(res => {
+      this.deviceConfig = res;
     });
   }
 

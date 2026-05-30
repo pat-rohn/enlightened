@@ -107,13 +107,13 @@
       </ion-range>
       <div>
         <ion-button
-          [disabled]="!isReady && enableSaveButton"
+          [disabled]="!isReady || !enableSaveButton"
           (click)="onButton1()"
         >
           <ion-icon name="bulb-outline" slot="icon-only" size="large"></ion-icon>
         </ion-button>
         <ion-button
-          [disabled]="!isReady && enableSaveButton"
+          [disabled]="!isReady || !enableSaveButton"
           (click)="onButton2()"
         >
           <ion-icon name="bulb-outline" slot="icon-only" size="large"></ion-icon>
@@ -144,7 +144,7 @@
 
       <div *ngIf="activeLevelConfiguration">
         <ion-button
-          [disabled]="!isReady && enableSaveButton"
+          [disabled]="!isReady || !enableSaveButton"
           (click)="onSaveColor()"
         >
           <ion-icon name="save" slot="icon-only" size="large"></ion-icon>

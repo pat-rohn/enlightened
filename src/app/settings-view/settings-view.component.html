@@ -98,16 +98,16 @@
       </ion-item>
       <ion-item>
         <ion-label>ShowWebpage</ion-label>
-        <input [(ngModel)]="deviceConfig.ShowWebpage" type="checkbox" />
+        <ion-checkbox [(ngModel)]="deviceConfig.ShowWebpage"></ion-checkbox>
       </ion-item>
       <ion-item>
         <ion-label>IsConfigured</ion-label>
-        <input [(ngModel)]="deviceConfig.IsConfigured" type="checkbox" />
+        <ion-checkbox [(ngModel)]="deviceConfig.IsConfigured"></ion-checkbox>
       </ion-item>
 
       <ion-item>
         <ion-label>IsOfflineMode</ion-label>
-        <input [(ngModel)]="deviceConfig.IsOfflineMode" type="checkbox" />
+        <ion-checkbox [(ngModel)]="deviceConfig.IsOfflineMode"></ion-checkbox>
       </ion-item>
 
       <ion-item>
@@ -177,7 +177,7 @@
       </ion-item>
       <ion-item>
         <ion-label>FindSensors</ion-label>
-        <input [(ngModel)]="deviceConfig.FindSensors" type="checkbox" />
+        <ion-checkbox [(ngModel)]="deviceConfig.FindSensors"></ion-checkbox>
       </ion-item>
       <ion-item *ngIf="deviceConfig.FindSensors">
         <ion-label>DhtPin</ion-label>
@@ -245,7 +245,7 @@
       </ion-item>
       <ion-item>
         <ion-label>UseMQTT</ion-label>
-        <input [(ngModel)]="deviceConfig.UseMQTT" type="checkbox" />
+        <ion-checkbox [(ngModel)]="deviceConfig.UseMQTT"></ion-checkbox>
       </ion-item>
       <ion-item *ngIf="deviceConfig.UseMQTT">
         <ion-label>MQTTPort</ion-label>

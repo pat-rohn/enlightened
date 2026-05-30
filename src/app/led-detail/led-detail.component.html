@@ -122,7 +122,7 @@
       <div>
         <ion-item>
           <ion-label>Activate Level Config</ion-label>
-          <input [(ngModel)]="activeLevelConfiguration" type="checkbox" />
+          <ion-checkbox [(ngModel)]="activeLevelConfiguration"></ion-checkbox>
         </ion-item>
         <div *ngIf="activeLevelConfiguration">
           <mat-form-field appearance="fill">

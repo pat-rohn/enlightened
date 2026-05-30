@@ -45,16 +45,13 @@
 
       <ion-item>
         <ion-label>Is Activated</ion-label>
-        <input [(ngModel)]="sunriseSettings.IsActivated" type="checkbox" />
+        <ion-checkbox [(ngModel)]="sunriseSettings.IsActivated"></ion-checkbox>
       </ion-item>
 
       <div *ngIf="sunriseSettings.IsActivated">
         <ion-item>
           <ion-label>Monday</ion-label>
-          <input
-            [(ngModel)]="sunriseSettings.Monday.IsActive"
-            type="checkbox"
-          />
+          <ion-checkbox [(ngModel)]="sunriseSettings.Monday.IsActive"></ion-checkbox>
         </ion-item>
         <div *ngIf="sunriseSettings.Monday.IsActive">
           <ion-item>
@@ -73,10 +70,7 @@
 
         <ion-item>
           <ion-label>Tuesday</ion-label>
-          <input
-            [(ngModel)]="sunriseSettings.Tuesday.IsActive"
-            type="checkbox"
-          />
+          <ion-checkbox [(ngModel)]="sunriseSettings.Tuesday.IsActive"></ion-checkbox>
         </ion-item>
         <div *ngIf="sunriseSettings.Tuesday.IsActive">
           <ion-item>
@@ -95,10 +89,7 @@
 
         <ion-item>
           <ion-label>Wednesday</ion-label>
-          <input
-            [(ngModel)]="sunriseSettings.Wednesday.IsActive"
-            type="checkbox"
-          />
+          <ion-checkbox [(ngModel)]="sunriseSettings.Wednesday.IsActive"></ion-checkbox>
         </ion-item>
         <div *ngIf="sunriseSettings.Wednesday.IsActive">
           <ion-item>
@@ -117,10 +108,7 @@
 
         <ion-item>
           <ion-label>Thursday</ion-label>
-          <input
-            [(ngModel)]="sunriseSettings.Thursday.IsActive"
-            type="checkbox"
-          />
+          <ion-checkbox [(ngModel)]="sunriseSettings.Thursday.IsActive"></ion-checkbox>
         </ion-item>
         <div *ngIf="sunriseSettings.Thursday.IsActive">
           <ion-item>
@@ -139,10 +127,7 @@
 
         <ion-item>
           <ion-label>Friday</ion-label>
-          <input
-            [(ngModel)]="sunriseSettings.Friday.IsActive"
-            type="checkbox"
-          />
+          <ion-checkbox [(ngModel)]="sunriseSettings.Friday.IsActive"></ion-checkbox>
         </ion-item>
         <div *ngIf="sunriseSettings.Friday.IsActive">
           <ion-item>
@@ -162,10 +147,7 @@
 
         <ion-item>
           <ion-label>Saturday</ion-label>
-          <input
-            [(ngModel)]="sunriseSettings.Saturday.IsActive"
-            type="checkbox"
-          />
+          <ion-checkbox [(ngModel)]="sunriseSettings.Saturday.IsActive"></ion-checkbox>
         </ion-item>
         <div *ngIf="sunriseSettings.Saturday.IsActive">
           <ion-item>
@@ -185,10 +167,7 @@
 
         <ion-item>
           <ion-label>Sunday</ion-label>
-          <input
-            [(ngModel)]="sunriseSettings.Sunday.IsActive"
-            type="checkbox"
-          />
+          <ion-checkbox [(ngModel)]="sunriseSettings.Sunday.IsActive"></ion-checkbox>
         </ion-item>
         <div *ngIf="sunriseSettings.Sunday.IsActive">
           <ion-item>

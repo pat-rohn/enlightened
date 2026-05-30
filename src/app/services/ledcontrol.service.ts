@@ -16,9 +16,6 @@ export class LedcontrolService {
   currentDevice?: Device;
   ledStatus: LEDStatus;
 
-
-  private useDummy: boolean = false;
-
   httpOptions = {
     headers: new HttpHeaders({
       'Content-Type': 'application/x-www-form-urlencoded'
@@ -36,11 +33,8 @@ export class LedcontrolService {
   }
 
   getLedStatus(): Observable<LEDStatusJSON> {
-    let url = "http://" + this.currentDevice?.Address + "/api/led"
+    const url = "http://" + this.currentDevice?.Address + "/api/led";
     console.log('get led status from:' + url);
-    if (this.useDummy) {
-      url = "assets/ledstatus.json";
-    }
     return this.http.get<LEDStatusJSON>(url).pipe(
       tap(_ => console.log('fetched led status')),
       catchError(this.handleError<LEDStatusJSON>('getLedStatus'))
@@ -78,14 +72,11 @@ export class LedcontrolService {
 
 
   getDeviceSettings(device?: Device): Observable<DeviceSettings> {
-    let url = "http://" + this.currentDevice?.Address + "/api/config"
+    let url = "http://" + this.currentDevice?.Address + "/api/config";
     if (device != null) {
-      url = "http://" + device.Address + "/api/config"
+      url = "http://" + device.Address + "/api/config";
     }
     console.log('get device settings from:' + url);
-    if (this.useDummy) {
-      url = "assets/device-settings.json";
-    }
     return this.http.get<DeviceSettings>(url).pipe(
       timeout(2000),
       tap(_ => console.log('fetched device settings')),
@@ -94,12 +85,8 @@ export class LedcontrolService {
   }
 
   getTime(): Observable<string> {
-
-    let url = "http://" + this.currentDevice?.Address + "/api/time"
-    console.log('get device settings from:' + url);
-    if (this.useDummy) {
-      url = "assets/time.txt";
-    }
+    const url = "http://" + this.currentDevice?.Address + "/api/time";
+    console.log('get time from:' + url);
     return this.http.get(url, { responseType: 'text' }).pipe(
       timeout(1000),
       tap(_ => console.log('fetched device settings')),

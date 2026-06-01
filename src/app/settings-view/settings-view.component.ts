@@ -10,6 +10,7 @@ const DEFAULT_WIFI_SSID = 'Enlighted';
 const DEFAULT_WIFI_PASSWORD = 'enlighten-me';
 
 @Component({
+  standalone: false,
   selector: 'app-settings-view',
   templateUrl: './settings-view.component.html',
   styleUrls: ['./settings-view.component.scss'],

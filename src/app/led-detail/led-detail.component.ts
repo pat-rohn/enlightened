@@ -13,6 +13,7 @@ import { Settings, DeviceSettings } from '../settings';
 import { LocalstorageService } from '../services/localstorage.service';
 
 @Component({
+  standalone: false,
   selector: 'app-led-detail',
   templateUrl: './led-detail.component.html',
   styleUrls: ['./led-detail.component.scss'],

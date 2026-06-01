@@ -8,6 +8,7 @@ import { ActivatedRoute } from '@angular/router';
 
 
 @Component({
+  standalone: false,
   selector: 'app-sunrise',
   templateUrl: './sunrise.component.html',
   styleUrls: ['./sunrise.component.scss'],

@@ -92,6 +92,16 @@ export class SettingsViewComponent implements OnInit, OnDestroy {
   async clickedApplyDeviceConfig() {
     console.log("Disable Save");
     this.enableSave = false;
+    if (this.deviceConfig?.ServerAddress && !this.isValidUrl(this.deviceConfig.ServerAddress)) {
+      console.error('Invalid ServerAddress URL: ' + this.deviceConfig.ServerAddress);
+      this.enableSave = true;
+      return;
+    }
+    if (this.deviceConfig?.Button2GetURL && !this.isValidUrl(this.deviceConfig.Button2GetURL)) {
+      console.error('Invalid Button2GetURL: ' + this.deviceConfig.Button2GetURL);
+      this.enableSave = true;
+      return;
+    }
     console.log(JSON.stringify(this.deviceConfig));
     this.ledcontrolService.applyDeviceSettings(this.deviceConfig!).pipe(
       switchMap(() => this.ledcontrolService.getDeviceSettings())
@@ -132,6 +142,17 @@ export class SettingsViewComponent implements OnInit, OnDestroy {
   private isValidDeviceAddress(address: string): boolean {
     // Accept IPv4, IPv4:port, or simple hostnames. Reject anything with whitespace or URL schemes.
     return /^[a-zA-Z0-9._-]+(:\d{1,5})?$/.test(address);
+  }
+
+  private isValidUrl(url: string): boolean {
+    // Accept only http:// and https:// URLs — reject empty strings, bare IPs, and other schemes.
+    if (!url) return true; // optional field
+    try {
+      const parsed = new URL(url);
+      return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+    } catch {
+      return false;
+    }
   }
 
   onAddressChanged(event: any) {

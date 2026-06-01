@@ -22,10 +22,10 @@
     "@angular/platform-browser": "^17.0.8",
     "@angular/platform-browser-dynamic": "^17.0.8",
     "@angular/router": "^17.0.8",
-    "@capacitor/android": "^4.8.1",
-    "@capacitor/cli": "^4.8.1",
-    "@capacitor/core": "^4.8.1",
-    "@capacitor/preferences": "^4.0.2",
+    "@capacitor/android": "^6.0.0",
+    "@capacitor/cli": "^6.0.0",
+    "@capacitor/core": "^6.0.0",
+    "@capacitor/preferences": "^6.0.0",
     "@ionic/angular": "^7.5.7",
     "@ionic/angular-server": "^7.5.7",
     "@ionic/cli": "^7.1.6",
@@ -37,7 +37,14 @@
   "devDependencies": {
     "@angular-devkit/build-angular": "^17.0.7",
     "@typescript-eslint/eslint-plugin": "^6.16.0",
-    "@typescript-eslint/parser": "^6.16.0"
+    "@typescript-eslint/parser": "^6.16.0",
+    "jasmine-core": "~5.1.0",
+    "karma": "~6.4.0",
+    "karma-chrome-launcher": "~3.2.0",
+    "karma-coverage": "~2.2.0",
+    "karma-jasmine": "~5.1.0",
+    "karma-jasmine-html-reporter": "~2.1.0",
+    "typescript": "^6.0.3"
   },
   "description": "An Ionic project"
 }

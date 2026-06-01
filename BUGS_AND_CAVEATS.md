@@ -286,11 +286,11 @@ async resetWiFi() {
 
 ---
 
-### 4.2 All API communication is plain HTTP
+### 4.2 All API communication is plain HTTP ✅ Fixed
+
+> **Fixed** — `isValidUrl()` added to `SettingsViewComponent`. Before saving device config, both `ServerAddress` and `Button2GetURL` are validated with `new URL()` — only `http:` and `https:` schemes are accepted. Bare IPs, empty strings, and other schemes are rejected and the save is aborted.
 
 **File:** [src/app/services/ledcontrol.service.ts](src/app/services/ledcontrol.service.ts)
-
-All device API calls use `http://`. If the device is on a local network (expected), this is an acceptable tradeoff. However, `Button2GetURL` and `ServerAddress` in `DeviceSettings` could be arbitrary URLs — these are fetched/sent without any validation and could point to external hosts over HTTP. There is no URL allowlist or scheme validation.
 
 ---
 
@@ -466,36 +466,27 @@ Native HTML checkboxes are used throughout instead of `<ion-checkbox>`. This is 
 
 ## 8. Dependency Caveats
 
-### 8.1 Capacitor 4 is end-of-life
+### 8.1 Capacitor 4 is end-of-life ✅ Fixed
+
+> **Fixed** — all Capacitor packages upgraded to `^6.0.0`; `cap sync` confirmed successful.
 
 **File:** [package.json](package.json)
-
-```json
-"@capacitor/android": "^4.8.1",
-"@capacitor/core": "^4.8.1"
-```
-
-Capacitor 4 is two major versions behind (current: Capacitor 6). Google Play Store now targets API 35+, and Capacitor 4's Gradle config (`android/build.gradle`) targets older SDK versions. This will eventually block publishing new APK updates.
 
 ---
 
-### 8.2 `@capacitor/preferences` is a Capacitor 4 package
+### 8.2 `@capacitor/preferences` is a Capacitor 4 package ✅ Fixed
+
+> **Fixed** — `@capacitor/preferences` bumped to `^6.0.0` alongside core; all four Capacitor packages are now on the same major version.
 
 **File:** [package.json](package.json)
-
-```json
-"@capacitor/preferences": "^4.0.2"
-```
-
-The preferences plugin version must match the Capacitor core version. Mixing versions is a common source of silent runtime failures on Android.
 
 ---
 
-### 8.3 No testing utilities in devDependencies
+### 8.3 No testing utilities in devDependencies ✅ Fixed
+
+> **Fixed** — `jasmine-core`, `karma`, `karma-chrome-launcher`, `karma-coverage`, `karma-jasmine`, `karma-jasmine-html-reporter`, and `typescript` are now explicitly listed in `devDependencies` in [package.json](package.json).
 
 **File:** [package.json](package.json)
-
-`karma.conf.js` and `*.spec.ts` files exist, but `@angular/core/testing`, `jasmine`, `karma`, and `karma-jasmine` are not listed in `devDependencies`. They are likely pulled in transitively via `@angular-devkit/build-angular`, but this is not explicit and could break with a build tool upgrade.
 
 ---
 
@@ -622,7 +613,7 @@ Every `AlarmTime` input is `type="text"` with `label=""` and no `placeholder`. T
 | 3.3 | Low | RxJS | Slider triggers HTTP request with no debouncing | ✅ Fixed — `save$` Subject + `switchMap` |
 | 3.4 | Low | RxJS | No request cancellation — last response can revert user changes | ✅ Fixed — `save$` Subject + `switchMap` |
 | 4.1 | Medium | Security | Default WiFi password hardcoded in source | ✅ Fixed — named constants `DEFAULT_WIFI_SSID/PASSWORD` |
-| 4.2 | Low | Security | All API traffic is plain HTTP; no URL allowlist | 🔲 Open |
+| 4.2 | Low | Security | All API traffic is plain HTTP; no URL allowlist | ✅ Fixed — `isValidUrl()` guards `ServerAddress` + `Button2GetURL` |
 | 4.3 | Medium | Security | No device address validation before HTTP request | ✅ Fixed — `isValidDeviceAddress()` regex guard |
 | 5.1 | Low | Build | Three deprecated `tsconfig` options (TS7 breaking) | ✅ Fixed `e9384df` |
 | 5.2 | Low | Build | Unused `Input` import in service | ✅ Fixed `7ddce87` |
@@ -635,9 +626,9 @@ Every `AlarmTime` input is `type="text"` with `label=""` and no `placeholder`. T
 | 7.2 | Medium | Template | `ion-refresher` inside nested content — broken on some platforms | ✅ Fixed `20f011f` |
 | 7.3 | Low | Template | Native `<input type="checkbox">` instead of `<ion-checkbox>` | ✅ Fixed `e7e9d35` |
 | 7.4 | Low | Template | `<ion-title>` used as a list label instead of `<ion-label>` | ✅ Fixed — replaced with `<ion-label>` |
-| 8.1 | Medium | Deps | Capacitor 4 is EOL; Play Store targets API 35+ | 🔲 Open |
-| 8.2 | Low | Deps | `@capacitor/preferences` must match Capacitor core version | 🔲 Open |
-| 8.3 | Low | Deps | Test dependencies not explicitly listed in `devDependencies` | 🔲 Open |
+| 8.1 | Medium | Deps | Capacitor 4 is EOL; Play Store targets API 35+ | ✅ Fixed — upgraded to Capacitor 6 |
+| 8.2 | Low | Deps | `@capacitor/preferences` must match Capacitor core version | ✅ Fixed — all Capacitor packages on `^6.0.0` |
+| 8.3 | Low | Deps | Test dependencies not explicitly listed in `devDependencies` | ✅ Fixed — karma/jasmine/typescript added explicitly |
 | 9.1 | **High** | Alarm | Refresh spinner dismisses before alarm data is loaded | ✅ Fixed `5f81693` |
 | 9.2 | Medium | Alarm | Pull-to-refresh silently discards unsaved alarm edits | ✅ Fixed `5f81693` |
 | 9.3 | Medium | Alarm | Save re-fetches immediately — may read back stale device config | ✅ Fixed `5f81693` |

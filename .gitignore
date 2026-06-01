@@ -33,6 +33,8 @@ android
 android.backup
 
 DevProfile*
+BUGS_AND_CAVEATS.md
+MIGRATION.md
 .nx/cache
 .vscode/typings/cordova-ionic/plugins/keyboard.d.ts
 .vscode/typings/jquery/jquery.d.ts

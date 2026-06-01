@@ -1,6 +1,6 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Subject, firstValueFrom } from 'rxjs';
-import { switchMap, takeUntil } from 'rxjs/operators';
+import { skip, switchMap, takeUntil } from 'rxjs/operators';
 import { DeviceSettings, SunriseSettings, DaySetting, Settings } from '../settings'
 import { LocalstorageService } from '../services/localstorage.service'
 import { LedcontrolService } from '../services/ledcontrol.service';
@@ -27,11 +27,9 @@ export class SunriseComponent implements OnInit, OnDestroy {
     private localStorage: LocalstorageService,
     private ledcontrolService: LedcontrolService,
     private activatedRoute: ActivatedRoute) {
-      this.activatedRoute.params.pipe(takeUntil(this.destroy$)).subscribe(params => {
+      this.activatedRoute.params.pipe(skip(1), takeUntil(this.destroy$)).subscribe(params => {
         console.log(params["id"]);
-        if (this.deviceSettings != null) {
-          this.clickedRefresh();
-        }
+        this.clickedRefresh();
       });
     }
 

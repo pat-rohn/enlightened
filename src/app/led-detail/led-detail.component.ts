@@ -1,6 +1,6 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Subject } from 'rxjs';
-import { switchMap, takeUntil } from 'rxjs/operators';
+import { skip, switchMap, takeUntil } from 'rxjs/operators';
 
 import { ActivatedRoute } from '@angular/router'
 import { LedcontrolService } from '../services/ledcontrol.service';
@@ -19,6 +19,7 @@ import { LocalstorageService } from '../services/localstorage.service';
 })
 export class LedDetailComponent implements OnInit, OnDestroy {
   private readonly destroy$ = new Subject<void>();
+  private readonly save$ = new Subject<void>();
   ledStatusJson?: LEDStatusJSON;
   enableSaveButton: boolean = false
   selectedLevel: LightLevel = LIGHT_FIRST;
@@ -54,11 +55,9 @@ export class LedDetailComponent implements OnInit, OnDestroy {
   constructor(private ledcontrolService: LedcontrolService,
     private localStorage: LocalstorageService,
     private activeRoute: ActivatedRoute) {
-    this.activeRoute.params.pipe(takeUntil(this.destroy$)).subscribe(params => {
+    this.activeRoute.params.pipe(skip(1), takeUntil(this.destroy$)).subscribe(params => {
       console.log(JSON.stringify(params));
-      if (this.deviceSettings != null) {
-        this.onRefresh();
-      }
+      this.onRefresh();
     });
   }
 
@@ -91,6 +90,23 @@ export class LedDetailComponent implements OnInit, OnDestroy {
     if (this.ledStatus != null) {
       console.log("On init: " + this.ledStatus.message);
     }
+
+    this.save$.pipe(
+      takeUntil(this.destroy$),
+      switchMap(() => this.ledcontrolService.saveStatus(this.getJson()))
+    ).subscribe({
+      next: (ledJson) => {
+        console.log('Answer: ' + JSON.stringify(ledJson));
+        this.isReady = true;
+      },
+      error: (error) => {
+        console.error('Observer got an error: ' + error);
+        this.ledStatus = {
+          red: 0, green: 0, blue: 0, brightness: 0,
+          message: 'No connection', mode: LED_OFF
+        };
+      }
+    });
   }
 
   pinFormatter(value: number) {
@@ -216,26 +232,7 @@ export class LedDetailComponent implements OnInit, OnDestroy {
   onSave(): void {
     if (this.ledStatus) {
       this.isReady = false;
-      this.ledcontrolService.saveStatus(this.getJson())
-        .subscribe(
-          {
-            next: (ledJson) => {
-              console.log('Answer: ' + JSON.stringify(ledJson));
-              this.isReady = true;
-            },
-            error: (error) => {
-              console.error('Observer got an error: ' + error)
-              this.ledStatus = {
-                red: 0,
-                green: 0,
-                blue: 0,
-                brightness: 0,
-                message: "No connection",
-                mode: LED_OFF
-              }
-            },
-          }
-        );
+      this.save$.next();
     }
   }
 
@@ -415,7 +412,7 @@ export class LedDetailComponent implements OnInit, OnDestroy {
   }
 
   getJson(): LEDStatusJSON {
-    var jsonLED: LEDStatusJSON = {
+    const jsonLED: LEDStatusJSON = {
       Red: this.ledStatus!.red,
       Green: this.ledStatus!.green,
       Blue: this.ledStatus!.blue,

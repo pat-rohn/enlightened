@@ -1,14 +1,11 @@
 
 
-import { LEDStatus } from './ledstatus';
-
 export interface Device {
   Address: string;
   Name: string;
 }
 
 export interface Settings {
-  Ledstatus: LEDStatus;
   CurrentDevice: Device;
   KnownDevices: Device[];
 }

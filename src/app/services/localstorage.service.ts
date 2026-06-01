@@ -1,7 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Preferences } from '@capacitor/preferences';
 import { Settings, Device } from '../settings';
-import { DEFAULT_LED_STATUS } from '../ledstatus-mockup';
 import { LedcontrolService } from './ledcontrol.service'
 
 
@@ -12,7 +11,6 @@ export class LocalstorageService {
 
   settingKey = "settings-new"
   settings: Settings = {
-    Ledstatus: DEFAULT_LED_STATUS,
     CurrentDevice: { Name: "Default", Address: "192.168.4.1" },
     KnownDevices: [{ Name: "Default", Address: "192.168.4.1" }]
   };

@@ -1,10 +1,13 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Subject } from 'rxjs';
-import { switchMap, takeUntil } from 'rxjs/operators';
+import { skip, switchMap, takeUntil } from 'rxjs/operators';
 import { DeviceSettings, Settings, Device } from '../settings';
 import { LocalstorageService } from '../services/localstorage.service'
 import { LedcontrolService } from '../services/ledcontrol.service';
 import { ActivatedRoute } from '@angular/router';
+
+const DEFAULT_WIFI_SSID = 'Enlighted';
+const DEFAULT_WIFI_PASSWORD = 'enlighten-me';
 
 @Component({
   selector: 'app-settings-view',
@@ -23,11 +26,9 @@ export class SettingsViewComponent implements OnInit, OnDestroy {
     private localStorage: LocalstorageService,
     private ledcontrolService: LedcontrolService,
     private activeRoute: ActivatedRoute) {
-    this.activeRoute.params.pipe(takeUntil(this.destroy$)).subscribe(params => {
+    this.activeRoute.params.pipe(skip(1), takeUntil(this.destroy$)).subscribe(params => {
       console.log(params["id"]);
-      if (this.deviceConfig != null) {
-        this.clickedRefreshDevice();
-      }
+      this.clickedRefreshDevice();
     });
   }
 
@@ -116,8 +117,8 @@ export class SettingsViewComponent implements OnInit, OnDestroy {
     if (this.deviceConfig != null) {
       this.deviceConfig.IsConfigured = false;
       this.deviceConfig.ServerAddress = "http://localhost:3000";
-      this.deviceConfig.WiFiName = "Enlighted";
-      this.deviceConfig.WiFiPassword = "enlighten-me";
+      this.deviceConfig.WiFiName = DEFAULT_WIFI_SSID;
+      this.deviceConfig.WiFiPassword = DEFAULT_WIFI_PASSWORD;
       this.deviceConfig.IsOfflineMode = true;
     }
 
@@ -128,9 +129,14 @@ export class SettingsViewComponent implements OnInit, OnDestroy {
     });
   }
 
+  private isValidDeviceAddress(address: string): boolean {
+    // Accept IPv4, IPv4:port, or simple hostnames. Reject anything with whitespace or URL schemes.
+    return /^[a-zA-Z0-9._-]+(:\d{1,5})?$/.test(address);
+  }
+
   onAddressChanged(event: any) {
-    let deviceAddress = event.target.value as string
-    if (deviceAddress.length > 0) {
+    const deviceAddress = (event.target.value as string).trim();
+    if (deviceAddress.length > 0 && this.isValidDeviceAddress(deviceAddress)) {
       console.log("onAddressChanged: Add new device: " + event.target.value)
       this.ledcontrolService.setDevice({ Name: "Unknown", Address: deviceAddress })
       this.ledcontrolService.getDeviceSettings().subscribe({

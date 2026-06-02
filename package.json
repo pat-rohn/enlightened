@@ -27,10 +27,10 @@
     "@capacitor/cli": "^6.0.0",
     "@capacitor/core": "^6.0.0",
     "@capacitor/preferences": "^6.0.0",
-    "@ionic/angular": "^7.5.7",
-    "@ionic/angular-server": "^7.5.7",
+    "@ionic/angular": "^8.8.8",
+    "@ionic/angular-server": "^8.8.8",
     "@ionic/cli": "^7.1.6",
-    "ionicons": "^6.0.3",
+    "ionicons": "^8.0.13",
     "rxjs": "^7.5.0",
     "tslib": "^2.3.0",
     "zone.js": "^0.16.2"

@@ -24,6 +24,20 @@ allprojects {
     }
 }
 
+// Kotlin stdlib split-artifact conflict: since Kotlin 1.8 the jdk7/jdk8 modules
+// are merged into kotlin-stdlib. Force old transitive refs to the same version.
+subprojects {
+    configurations.configureEach {
+        resolutionStrategy.eachDependency { DependencyResolveDetails details ->
+            if (details.requested.group == 'org.jetbrains.kotlin' &&
+                    (details.requested.name == 'kotlin-stdlib-jdk7' ||
+                     details.requested.name == 'kotlin-stdlib-jdk8')) {
+                details.useVersion '1.8.22'
+            }
+        }
+    }
+}
+
 task clean(type: Delete) {
     delete rootProject.buildDir
 }

@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">enlightened</string>
+    <string name="title_activity_main">enlightened</string>
+    <string name="package_name">io.ionic.enlightened</string>
+    <string name="custom_url_scheme">io.ionic.enlightened</string>
+</resources>

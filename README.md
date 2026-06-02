@@ -12,35 +12,38 @@ Small project to configure and control ESP32/ESP8266 using HTTP. Compatible with
 ![alt text](https://raw.githubusercontent.com/pat-rohn/enlightened/main/example-alarm.png)
 
 ## Get started
-[ionic with capacitor](https://capacitorjs.com/docs/getting-started/with-ionic)
+
+Install dependencies:
+```bash
+npm install
+```
+
+Reference: [Ionic with Capacitor](https://capacitorjs.com/docs/getting-started/with-ionic)
 
 ### Develop
-```
+```bash
 ng serve
-
 ```
 
 ### Open in Android Studio
-```
-ionic build && npx cap sync
-
+```bash
+npm run build && npx cap sync
 npx cap open android
 ```
 
-### Build apk in Android Studio
+### Build APK in Android Studio
 
-- Allow HTTP in AndroidManifest.xml
-```
+- Allow HTTP in `AndroidManifest.xml`:
+```xml
 <application
-...
- android:usesCleartextTraffic="true">
+    ...
+    android:usesCleartextTraffic="true">
 </application>
+```
 
-
-``` 
-- Optional:Change icon (icon.png: 1024x1024)
-    - right click on app/src/main/res > New > Image Asset
-    - Choose file for foreground layer *and* a color for background-layer (or background picture, does not work always)
+- Optional: change the launcher icon (source: `icon.xcf`, export as 1024×1024 `icon.png`)
+    - Right-click `app/src/main/res` → New → Image Asset
+    - Choose file for foreground layer and a color for background layer
     - Click Next and Finish
 
-- Navigate to Build > Build Bundle(s)/APK(s) > Build APK(s)
+- Navigate to Build → Build Bundle(s)/APK(s) → Build APK(s)

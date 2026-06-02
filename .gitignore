@@ -29,7 +29,6 @@ npm-debug.log*
 /plugins
 /www
 .angular/*
-android
 android.backup
 
 DevProfile*

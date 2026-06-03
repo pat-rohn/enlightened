@@ -44,235 +44,26 @@
         message="This will reset your WiFi settings. Your device will create an Access-Point with the name 'Enlighted' and password 'enlighten-me.'"
         [buttons]="alertButtons"
       ></ion-alert>
-      <ion-item>
-        <ion-label>Device Name</ion-label>
-        <ion-input
-          slot="end"
-          label=""
-          type="text"
-          ngDefaultControl
-          [(ngModel)]="deviceConfig.SensorID"
-          text-right
-
-        >
-        </ion-input>
-      </ion-item>
-      <ion-item>
-        <ion-label>ServerAddress</ion-label>
-        <ion-input
-          slot="end"
-          type="text"
-          label=""
-          ngDefaultControl
-          [(ngModel)]="deviceConfig.ServerAddress"
-          text-right
-
-        >
-        </ion-input>
-      </ion-item>
-      <ion-item>
-        <ion-label>WiFiName</ion-label>
-        <ion-input
-          slot="end"
-          type="text"
-          label=""
-          ngDefaultControl
-          [(ngModel)]="deviceConfig.WiFiName"
-          text-right
-
-        >
-        </ion-input>
-      </ion-item>
-      <ion-item>
-        <ion-label>WiFiPassword</ion-label>
-        <ion-input
-          slot="end"
-          type="password"
-          label=""
-          ngDefaultControl
-          [(ngModel)]="deviceConfig.WiFiPassword"
-          text-right
-
-        >
-        </ion-input>
-      </ion-item>
-      <ion-item>
-        <ion-label>ShowWebpage</ion-label>
-        <ion-checkbox [(ngModel)]="deviceConfig.ShowWebpage"></ion-checkbox>
-      </ion-item>
-      <ion-item>
-        <ion-label>IsConfigured</ion-label>
-        <ion-checkbox [(ngModel)]="deviceConfig.IsConfigured"></ion-checkbox>
-      </ion-item>
-
-      <ion-item>
-        <ion-label>IsOfflineMode</ion-label>
-        <ion-checkbox [(ngModel)]="deviceConfig.IsOfflineMode"></ion-checkbox>
-      </ion-item>
-
-      <ion-item>
-        <ion-label>Button1</ion-label>
-        <ion-input
-          slot="end"
-          type="number"
-          label=""
-          ngDefaultControl
-          [(ngModel)]="deviceConfig.Button1"
-          text-right
-
-        >
-        </ion-input>
-      </ion-item>
-      <ion-item>
-        <ion-label>Button2</ion-label>
-        <ion-input
-          slot="end"
-          type="number"
-          label=""
-          ngDefaultControl
-          [(ngModel)]="deviceConfig.Button2"
-          text-right
-
-        >
-        </ion-input>
-      </ion-item>
-      <ion-item *ngIf="deviceConfig.Button2 > 0">
-        <ion-label>Button2GetURL</ion-label>
-        <ion-input
-          slot="end"
-          type="text"
-          label=""
-          ngDefaultControl
-          [(ngModel)]="deviceConfig.Button2GetURL"
-          text-right
-
-        >
-        </ion-input>
-      </ion-item>
-      <ion-item>
-        <ion-label>NumberOfLEDs</ion-label>
-        <ion-input
-          slot="end"
-          type="number"
-          label=""
-          ngDefaultControl
-          [(ngModel)]="deviceConfig.NumberOfLEDs"
-          text-right
-
-        >
-        </ion-input>
-      </ion-item>
-      <ion-item *ngIf="deviceConfig.NumberOfLEDs > 0">
-        <ion-label>LEDPin</ion-label>
-        <ion-input
-          slot="end"
-          type="number"
-          label=""
-          ngDefaultControl
-          [(ngModel)]="deviceConfig.LEDPin"
-          text-right
-
-        >
-        </ion-input>
-      </ion-item>
-      <ion-item>
-        <ion-label>FindSensors</ion-label>
-        <ion-checkbox [(ngModel)]="deviceConfig.FindSensors"></ion-checkbox>
-      </ion-item>
-      <ion-item *ngIf="deviceConfig.FindSensors">
-        <ion-label>DhtPin</ion-label>
-        <ion-input
-          slot="end"
-          type="number"
-          label=""
-          ngDefaultControl
-          [(ngModel)]="deviceConfig.DhtPin"
-          text-right
-
-        >
-        </ion-input>
-      </ion-item>
-      <ion-item *ngIf="deviceConfig.FindSensors">
-        <ion-label>SerialRX</ion-label>
-        <ion-input
-          slot="end"
-          type="number"
-          label=""
-          ngDefaultControl
-          [(ngModel)]="deviceConfig.SerialRX"
-          text-right
-
-        >
-        </ion-input>
-      </ion-item>
-      <ion-item *ngIf="deviceConfig.FindSensors">
-        <ion-label>SerialTX</ion-label>
-        <ion-input
-          slot="end"
-          type="number"
-          label=""
-          ngDefaultControl
-          [(ngModel)]="deviceConfig.SerialTX"
-          text-right
-
-        >
-        </ion-input>
-      </ion-item>
-      <ion-item>
-        <ion-label>WindSensorPin</ion-label>
-        <ion-input
-          slot="end"
-          type="number"
-          label=""
-          ngDefaultControl
-          [(ngModel)]="deviceConfig.WindSensorPin"
-          text-right
-
-        >
-        </ion-input>
-      </ion-item>
-      <ion-item>
-        <ion-label>RainfallSensorPin</ion-label>
-        <ion-input
-          slot="end"
-          type="number"
-          label=""
-          ngDefaultControl
-          [(ngModel)]="deviceConfig.RainfallSensorPin"
-          text-right
-
-        ></ion-input>
-      </ion-item>
-      <ion-item>
-        <ion-label>UseMQTT</ion-label>
-        <ion-checkbox [(ngModel)]="deviceConfig.UseMQTT"></ion-checkbox>
-      </ion-item>
-      <ion-item *ngIf="deviceConfig.UseMQTT">
-        <ion-label>MQTTPort</ion-label>
-        <ion-input
-          slot="end"
-          type="number"
-          label=""
-          ngDefaultControl
-          [(ngModel)]="deviceConfig.MQTTPort"
-          text-right
-
-        >
-        </ion-input>
-      </ion-item>
-      <ion-item *ngIf="deviceConfig.UseMQTT">
-        <ion-label>MQTTTopic</ion-label>
-        <ion-input
-          slot="end"
-          type="text"
-          label=""
-          ngDefaultControl
-          [(ngModel)]="deviceConfig.MQTTTopic"
-          text-right
-
-        >
-        </ion-input>
-      </ion-item>
+      <ng-container *ngFor="let field of fieldDefs">
+        <ion-item *ngIf="isFieldVisible(field)">
+          <ion-label>{{ field.label }}</ion-label>
+          <ion-checkbox
+            *ngIf="field.type === 'checkbox'"
+            [ngModel]="$any(deviceConfig)[field.key]"
+            (ngModelChange)="$any(deviceConfig)[field.key] = $event"
+          ></ion-checkbox>
+          <ion-input
+            *ngIf="field.type !== 'checkbox'"
+            slot="end"
+            [type]="field.type"
+            label=""
+            ngDefaultControl
+            [ngModel]="$any(deviceConfig)[field.key]"
+            (ngModelChange)="$any(deviceConfig)[field.key] = $event"
+            text-right
+          ></ion-input>
+        </ion-item>
+      </ng-container>
       <div class="save_button" *ngIf="enableSave">
         <ion-icon
           name="save"

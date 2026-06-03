@@ -23,6 +23,42 @@ export class SettingsViewComponent implements OnInit, OnDestroy {
   deviceConfig?: DeviceSettings;
   enableSave = true;
 
+  readonly fieldDefs: Array<{
+    key: keyof DeviceSettings;
+    label: string;
+    type: 'text' | 'number' | 'password' | 'checkbox';
+    showWhen?: { field: keyof DeviceSettings; greaterThan?: number };
+  }> = [
+    { key: 'SensorID',          label: 'Device Name',       type: 'text' },
+    { key: 'ServerAddress',     label: 'ServerAddress',     type: 'text' },
+    { key: 'WiFiName',          label: 'WiFiName',          type: 'text' },
+    { key: 'WiFiPassword',      label: 'WiFiPassword',      type: 'password' },
+    { key: 'ShowWebpage',       label: 'ShowWebpage',       type: 'checkbox' },
+    { key: 'IsConfigured',      label: 'IsConfigured',      type: 'checkbox' },
+    { key: 'IsOfflineMode',     label: 'IsOfflineMode',     type: 'checkbox' },
+    { key: 'Button1',           label: 'Button1',           type: 'number' },
+    { key: 'Button2',           label: 'Button2',           type: 'number' },
+    { key: 'Button2GetURL',     label: 'Button2GetURL',     type: 'text',    showWhen: { field: 'Button2', greaterThan: 0 } },
+    { key: 'NumberOfLEDs',      label: 'NumberOfLEDs',      type: 'number' },
+    { key: 'LEDPin',            label: 'LEDPin',            type: 'number',  showWhen: { field: 'NumberOfLEDs', greaterThan: 0 } },
+    { key: 'FindSensors',       label: 'FindSensors',       type: 'checkbox' },
+    { key: 'DhtPin',            label: 'DhtPin',            type: 'number',  showWhen: { field: 'FindSensors' } },
+    { key: 'SerialRX',          label: 'SerialRX',          type: 'number',  showWhen: { field: 'FindSensors' } },
+    { key: 'SerialTX',          label: 'SerialTX',          type: 'number',  showWhen: { field: 'FindSensors' } },
+    { key: 'WindSensorPin',     label: 'WindSensorPin',     type: 'number' },
+    { key: 'RainfallSensorPin', label: 'RainfallSensorPin', type: 'number' },
+    { key: 'UseMQTT',           label: 'UseMQTT',           type: 'checkbox' },
+    { key: 'MQTTPort',          label: 'MQTTPort',          type: 'number',  showWhen: { field: 'UseMQTT' } },
+    { key: 'MQTTTopic',         label: 'MQTTTopic',         type: 'text',    showWhen: { field: 'UseMQTT' } },
+  ];
+
+  isFieldVisible(field: { showWhen?: { field: keyof DeviceSettings; greaterThan?: number } }): boolean {
+    if (!field.showWhen || !this.deviceConfig) return true;
+    const val = (this.deviceConfig as any)[field.showWhen.field];
+    if (field.showWhen.greaterThan !== undefined) return (val as number) > field.showWhen.greaterThan;
+    return !!val;
+  }
+
   constructor(
     private localStorage: LocalstorageService,
     private ledcontrolService: LedcontrolService,

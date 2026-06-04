@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
 import { Subject, firstValueFrom } from 'rxjs';
 import { skip, switchMap, takeUntil } from 'rxjs/operators';
 import { DeviceSettings, SunriseSettings, DaySetting, Settings } from '../settings'
@@ -11,6 +11,7 @@ import { ActivatedRoute } from '@angular/router';
   standalone: false,
   selector: 'app-sunrise',
   templateUrl: './sunrise.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./sunrise.component.scss'],
 })
 export class SunriseComponent implements OnInit, OnDestroy {

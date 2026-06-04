@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
 import { Subject } from 'rxjs';
 import { skip, switchMap, takeUntil } from 'rxjs/operators';
 import { DeviceSettings, Settings, Device } from '../settings';
@@ -13,6 +13,7 @@ const DEFAULT_WIFI_PASSWORD = 'enlighten-me';
   standalone: false,
   selector: 'app-settings-view',
   templateUrl: './settings-view.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./settings-view.component.scss'],
 })
 export class SettingsViewComponent implements OnInit, OnDestroy {

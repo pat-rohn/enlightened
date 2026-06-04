@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef, ChangeDetectionStrategy } from '@angular/core';
 import { Subject, of } from 'rxjs';
 import { skip, switchMap, takeUntil } from 'rxjs/operators';
 
@@ -17,6 +17,7 @@ import { LocalstorageService } from '../services/localstorage.service';
   standalone: false,
   selector: 'app-led-detail',
   templateUrl: './led-detail.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./led-detail.component.scss'],
 })
 export class LedDetailComponent implements OnInit, OnDestroy {
@@ -29,7 +30,8 @@ export class LedDetailComponent implements OnInit, OnDestroy {
 
   constructor(private ledcontrolService: LedcontrolService,
     private localStorage: LocalstorageService,
-    private activeRoute: ActivatedRoute) {
+    private activeRoute: ActivatedRoute,
+    private cdr: ChangeDetectorRef) {
     this.activeRoute.params.pipe(skip(1), takeUntil(this.destroy$)).subscribe(params => {
       console.log(JSON.stringify(params));
       this.onRefresh();
@@ -37,7 +39,13 @@ export class LedDetailComponent implements OnInit, OnDestroy {
   }
 
   get isReady(): boolean {
-    //this.cdr.detectChanges();
+    if (this.loadingCount < 0) {
+      console.warn("Loading count is negative: " + this.loadingCount);
+      this.loadingCount = 0;
+    }
+    if (this.loadingCount > 0) {
+      console.log("Loading count: " + this.loadingCount);
+    }
     return this.loadingCount === 0;
   }
   private startLoading(): void {
@@ -49,6 +57,8 @@ export class LedDetailComponent implements OnInit, OnDestroy {
     if (this.loadingCount > 0) this.loadingCount--;
     console.log(`[loading] stopLoading → count=${this.loadingCount}, isReady=${this.isReady}`);
     console.trace('[loading] stopLoading call stack');
+
+    this.cdr.detectChanges();
   }
   activeLevelConfiguration = false;
 

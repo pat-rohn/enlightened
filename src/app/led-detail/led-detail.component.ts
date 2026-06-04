@@ -1,8 +1,9 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
-import { Subject } from 'rxjs';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
+import { Subject, of } from 'rxjs';
 import { skip, switchMap, takeUntil } from 'rxjs/operators';
 
 import { ActivatedRoute } from '@angular/router'
+import { debounceTime } from 'rxjs/operators';
 import { LedcontrolService } from '../services/ledcontrol.service';
 import {
   LEDStatus, LEDStatusJSON, LabeledLedMode, LED_ON, LED_OFF, LED_PULSE,
@@ -24,7 +25,31 @@ export class LedDetailComponent implements OnInit, OnDestroy {
   ledStatusJson?: LEDStatusJSON;
   enableSaveButton: boolean = false
   selectedLevel: LightLevel = LIGHT_FIRST;
-  isReady = true;
+  private loadingCount = 0;
+
+  constructor(private ledcontrolService: LedcontrolService,
+    private localStorage: LocalstorageService,
+    private activeRoute: ActivatedRoute) {
+    this.activeRoute.params.pipe(skip(1), takeUntil(this.destroy$)).subscribe(params => {
+      console.log(JSON.stringify(params));
+      this.onRefresh();
+    });
+  }
+
+  get isReady(): boolean {
+    //this.cdr.detectChanges();
+    return this.loadingCount === 0;
+  }
+  private startLoading(): void {
+    this.loadingCount++;
+    console.log(`[loading] startLoading → count=${this.loadingCount}`);
+    console.trace('[loading] startLoading call stack');
+  }
+  private stopLoading(): void {
+    if (this.loadingCount > 0) this.loadingCount--;
+    console.log(`[loading] stopLoading → count=${this.loadingCount}, isReady=${this.isReady}`);
+    console.trace('[loading] stopLoading call stack');
+  }
   activeLevelConfiguration = false;
 
   ledStatus: LEDStatus = {
@@ -53,14 +78,6 @@ export class LedDetailComponent implements OnInit, OnDestroy {
     LIGHT_THIRD,
   ];
 
-  constructor(private ledcontrolService: LedcontrolService,
-    private localStorage: LocalstorageService,
-    private activeRoute: ActivatedRoute) {
-    this.activeRoute.params.pipe(skip(1), takeUntil(this.destroy$)).subscribe(params => {
-      console.log(JSON.stringify(params));
-      this.onRefresh();
-    });
-  }
 
   ngOnDestroy(): void {
     this.destroy$.next();
@@ -71,34 +88,16 @@ export class LedDetailComponent implements OnInit, OnDestroy {
     console.log("On init");
     this.settings = await this.localStorage.readSettings();
     this.ledcontrolService.setDevice(this.settings.CurrentDevice);
-    this.ledcontrolService.getDeviceSettings().pipe(
-      switchMap(res => {
-        this.enableSaveButton = true;
-        this.deviceSettings = res;
-        return this.ledcontrolService.getLedStatus();
-      })
-    ).subscribe({
-      next: (ledJson) => {
-        console.log('Answer:' + JSON.stringify(ledJson));
-        this.applyLEDStatus(ledJson);
-      },
-      error: (error) => {
-        console.error('Observer got an error: ' + error);
-        this.isReady = false;
-      }
-    });
-
-    if (this.ledStatus != null) {
-      console.log("On init: " + this.ledStatus.message);
-    }
 
     this.save$.pipe(
       takeUntil(this.destroy$),
+      debounceTime(300),   // wait 300ms of silence before firing
+
       switchMap(() => this.ledcontrolService.saveStatus(this.getJson()))
     ).subscribe({
       next: (ledJson) => {
         console.log('Answer: ' + JSON.stringify(ledJson));
-        this.isReady = true;
+        this.stopLoading();
       },
       error: (error) => {
         console.error('Observer got an error: ' + error);
@@ -106,8 +105,11 @@ export class LedDetailComponent implements OnInit, OnDestroy {
           red: 0, green: 0, blue: 0, brightness: 0,
           message: 'No connection', mode: LED_OFF
         };
+        this.stopLoading();
       }
     });
+
+    this.onRefresh();
   }
 
   pinFormatter(value: number) {
@@ -140,7 +142,7 @@ export class LedDetailComponent implements OnInit, OnDestroy {
 
   onSelectChange(value: LabeledLedMode): void {
     console.log("ion change");
-    this.isReady = false;
+    this.startLoading();
     const mode = value;
     if (this.ledStatus) {
       console.log("change mode");
@@ -152,7 +154,7 @@ export class LedDetailComponent implements OnInit, OnDestroy {
         .subscribe({
           next: (ledJson) => {
             console.log('Answer:' + JSON.stringify(ledJson));
-            this.isReady = true;
+            this.stopLoading();
           },
           error: (error) => {
             console.error('Observer got an error: ' + error)
@@ -163,7 +165,8 @@ export class LedDetailComponent implements OnInit, OnDestroy {
               brightness: 0,
               message: "No connection",
               mode: LED_OFF
-            }
+            };
+            this.stopLoading();
           },
         });
     }
@@ -232,13 +235,12 @@ export class LedDetailComponent implements OnInit, OnDestroy {
 
   onSave(): void {
     if (this.ledStatus) {
-      this.isReady = false;
+      this.startLoading();
       this.save$.next();
     }
   }
 
   onPower(): void {
-    this.isReady = false
     if (this.ledStatus) {
       if (this.ledStatus.mode != LED_OFF) {
         this.ledStatus.mode = LED_OFF;
@@ -252,7 +254,7 @@ export class LedDetailComponent implements OnInit, OnDestroy {
   }
 
   onButton1(): void {
-    this.isReady = false;
+    this.startLoading();
     this.ledcontrolService.pressButton("1").pipe(
       switchMap(() => {
         this.enableSaveButton = true;
@@ -262,17 +264,17 @@ export class LedDetailComponent implements OnInit, OnDestroy {
       next: (ledJson) => {
         console.log('Answer:' + JSON.stringify(ledJson));
         this.applyLEDStatus(ledJson);
-        this.isReady = true;
+        this.stopLoading();
       },
       error: (error) => {
         console.error('Observer got an error: ' + error);
-        this.isReady = false;
+        this.stopLoading();
       }
     });
   }
 
   onButton2(): void {
-    this.isReady = false;
+    this.startLoading();
     this.ledcontrolService.pressButton("2").pipe(
       switchMap(() => {
         this.enableSaveButton = true;
@@ -282,11 +284,11 @@ export class LedDetailComponent implements OnInit, OnDestroy {
       next: (ledJson) => {
         console.log('Answer:' + JSON.stringify(ledJson));
         this.applyLEDStatus(ledJson);
-        this.isReady = true;
+        this.stopLoading();
       },
       error: (error) => {
         console.error('Observer got an error: ' + error);
-        this.isReady = false;
+        this.stopLoading();
       }
     });
   }
@@ -295,23 +297,27 @@ export class LedDetailComponent implements OnInit, OnDestroy {
     this.onRefresh().then(_ => {
       console.log("handle Refresher complete")
       event.target.complete()
-      this.isReady = true;
-    }
-    )
+    })
   };
 
   async onRefresh() {
-    this.isReady = false;
+    this.startLoading();
     this.ledcontrolService.getDeviceSettings().pipe(
       switchMap(res => {
+        if (res == null) {
+          return of(null);
+        }
+        this.enableSaveButton = true;
         this.deviceSettings = res;
         return this.ledcontrolService.getLedStatus();
       })
     ).subscribe({
       next: (ledJson) => {
         console.log('Answer:' + JSON.stringify(ledJson));
-        this.applyLEDStatus(ledJson);
-        this.isReady = true;
+        if (ledJson != null) {
+          this.applyLEDStatus(ledJson);
+        }
+        this.stopLoading();
       },
       error: (error) => {
         console.error('Observer got an error: ' + error);
@@ -319,12 +325,13 @@ export class LedDetailComponent implements OnInit, OnDestroy {
           red: 0, green: 0, blue: 0, brightness: 0,
           message: 'No connection', mode: LED_OFF
         };
+        this.stopLoading();
       }
     });
   }
 
   onChangeColor() {
-    this.isReady = false;
+    this.startLoading();
     const ledstatus = this.getJson();
     const color = Math.floor(Math.random() * 6);
     switch (color) {

@@ -26,6 +26,8 @@
     "@capacitor/core": "^8.4.0",
     "@capacitor/preferences": "^8.0.1",
     "@ionic/angular": "^8.8.9",
+    "@ionic/angular-server": "^8.8.9",
+    "@ionic/angular-toolkit": "^11.0.1",
     "rxjs": "^7.5.0",
     "tslib": "^2.3.0",
     "zone.js": "^0.16.2"

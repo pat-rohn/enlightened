@@ -1,7 +1,7 @@
-import { Component, OnInit, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { Subject, firstValueFrom } from 'rxjs';
-import { skip, switchMap, takeUntil } from 'rxjs/operators';
-import { DeviceSettings, SunriseSettings, DaySetting, Settings } from '../settings'
+import { skip, takeUntil } from 'rxjs/operators';
+import { DeviceSettings, SunriseSettings, Settings } from '../settings'
 import { LocalstorageService } from '../services/localstorage.service'
 import { LedcontrolService } from '../services/ledcontrol.service';
 import { ActivatedRoute } from '@angular/router';
@@ -28,7 +28,8 @@ export class SunriseComponent implements OnInit, OnDestroy {
   constructor(
     private localStorage: LocalstorageService,
     private ledcontrolService: LedcontrolService,
-    private activatedRoute: ActivatedRoute) {
+    private activatedRoute: ActivatedRoute,
+    private cdr: ChangeDetectorRef) {
       this.activatedRoute.params.pipe(skip(1), takeUntil(this.destroy$)).subscribe(params => {
         console.log(params["id"]);
         this.clickedRefresh();
@@ -47,6 +48,7 @@ export class SunriseComponent implements OnInit, OnDestroy {
     const resSettings = await this.localStorage.readSettings();
     this.settings = resSettings;
     this.ledcontrolService.setDevice(this.settings.CurrentDevice);
+    this.cdr.markForCheck();
     try {
       const res = await firstValueFrom(this.ledcontrolService.getDeviceSettings());
       this.sunriseSettings = res.SunriseSettings;
@@ -57,6 +59,8 @@ export class SunriseComponent implements OnInit, OnDestroy {
     try {
       this.currentTime = await firstValueFrom(this.ledcontrolService.getTime());
     } catch (e) { console.error(e); }
+    // Zoneless: these values arrived from async HTTP, so nudge change detection.
+    this.cdr.markForCheck();
   }
 
   handleRefresh(event: any) {
@@ -64,6 +68,7 @@ export class SunriseComponent implements OnInit, OnDestroy {
       console.log("handle Refresher complete")
       event.target.complete()
       this.enableSave = true;
+      this.cdr.markForCheck();
     })
   };
 
@@ -75,6 +80,7 @@ export class SunriseComponent implements OnInit, OnDestroy {
     }
 
     this.enableSave = false;
+    this.cdr.markForCheck();
     try {
       const res = await firstValueFrom(this.ledcontrolService.getDeviceSettings());
       this.sunriseSettings = res.SunriseSettings;
@@ -89,10 +95,12 @@ export class SunriseComponent implements OnInit, OnDestroy {
     } catch (e) { console.error(e); }
 
     this.enableSave = true;
+    this.cdr.markForCheck();
   }
 
   async clickedSave() {
     this.enableSave = false;
+    this.cdr.markForCheck();
     console.log(JSON.stringify(this.deviceSettings));
     try {
       await firstValueFrom(this.ledcontrolService.applyDeviceSettings(this.deviceSettings!));
@@ -127,6 +135,7 @@ export class SunriseComponent implements OnInit, OnDestroy {
     }
 
     this.enableSave = true;
+    this.cdr.markForCheck();
   }
 
   private snapshotSavedSunrise() {

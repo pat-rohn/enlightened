@@ -42,7 +42,7 @@ export class LedcontrolService {
   }
 
   saveStatus(ledstatus: LEDStatusJSON): Observable<any> {
-    let url = "http://" + this.currentDevice?.Address + "/api/led"
+    const url = "http://" + this.currentDevice?.Address + "/api/led"
     console.log('get led status from:' + url);
     console.log(`Save: ` + ledstatus.Message + " mode: " + ledstatus.Mode + " Colors:[" +
       ledstatus.Brightness +
@@ -51,13 +51,14 @@ export class LedcontrolService {
       "," + ledstatus.Blue +
       "]")
     return this.http.post(url, ledstatus, this.httpOptions).pipe(
+      timeout(3000),
       tap(_ => console.log(`updated led ` + ledstatus.Message)),
       catchError(this.handleError<any>('saveStatus'))
     );
   }
 
-  pressButton(nr: String): Observable<any> {
-    let url = "http://" + this.currentDevice?.Address + "/api/button" + nr
+  pressButton(nr: string): Observable<any> {
+    const url = "http://" + this.currentDevice?.Address + "/api/button" + nr
     console.log('Button:' + nr + 'pressed');
 
     return this.http.get<any>(url, {
@@ -65,6 +66,7 @@ export class LedcontrolService {
         'Content-Type': 'application/json'
       })
     }).pipe(
+      timeout(3000),
       tap(_ => console.log(`updated led `)),
       catchError(this.handleError<any>('pressButton' + nr))
     );
@@ -94,7 +96,7 @@ export class LedcontrolService {
   }
 
   applyDeviceSettings(deviceSettings: DeviceSettings): Observable<any> {
-    let url = "http://" + this.currentDevice?.Address + "/api/config"
+    const url = "http://" + this.currentDevice?.Address + "/api/config"
     console.log('set device settings to :' + url);
     console.log(`Apply: ` + JSON.stringify(deviceSettings))
     return this.http.put(url, deviceSettings, this.httpOptions).pipe(
@@ -103,7 +105,7 @@ export class LedcontrolService {
   }
 
   restartDevice(): Observable<any> {
-    let url = "http://" + this.currentDevice?.Address + "/restart"
+    const url = "http://" + this.currentDevice?.Address + "/restart"
     console.log('restart:' + url);
     return this.http.get(url, this.httpOptions).pipe(
       catchError(this.handleError<any>('Restart'))
@@ -112,7 +114,7 @@ export class LedcontrolService {
 
   // no restart of controller
   saveDeviceSettings(deviceSettings: DeviceSettings): Observable<any> {
-    let url = "http://" + this.currentDevice?.Address + "/api/config"
+    const url = "http://" + this.currentDevice?.Address + "/api/config"
     console.log('set device settings to :' + url);
     console.log(`Apply: ` + JSON.stringify(deviceSettings))
     return this.http.put(url, deviceSettings, this.httpOptions).pipe(

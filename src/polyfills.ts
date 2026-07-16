@@ -43,11 +43,9 @@
  */
 
 /***************************************************************************************************
- * Zone JS is required by default for Angular itself.
- */
-import 'zone.js';  // Included with Angular CLI.
-
-
-/***************************************************************************************************
  * APPLICATION IMPORTS
+ *
+ * This app runs zoneless (provideZonelessChangeDetection in AppModule), so zone.js
+ * is intentionally NOT imported here. Change detection is driven by signals,
+ * markForCheck(), and template event bindings.
  */

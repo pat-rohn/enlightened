@@ -26,7 +26,7 @@ export class LocalstorageService {
     console.log(JSON.stringify(this.settings));
     const { value } = await Preferences.get({ key: this.settingKey })
     if (value != null) {
-      let settingsStr = value.toString();
+      const settingsStr = value.toString();
       this.settings = JSON.parse(settingsStr);
       console.log("Replace settings" + settingsStr);
     }

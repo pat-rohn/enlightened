@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { Subject } from 'rxjs';
 import { skip, switchMap, takeUntil } from 'rxjs/operators';
 import { DeviceSettings, Settings, Device } from '../settings';
@@ -63,7 +63,8 @@ export class SettingsViewComponent implements OnInit, OnDestroy {
   constructor(
     private localStorage: LocalstorageService,
     private ledcontrolService: LedcontrolService,
-    private activeRoute: ActivatedRoute) {
+    private activeRoute: ActivatedRoute,
+    private cdr: ChangeDetectorRef) {
     this.activeRoute.params.pipe(skip(1), takeUntil(this.destroy$)).subscribe(params => {
       console.log(params["id"]);
       this.clickedRefreshDevice();
@@ -82,8 +83,10 @@ export class SettingsViewComponent implements OnInit, OnDestroy {
         this.settings = res
         this.ledcontrolService.setDevice(res.CurrentDevice)
         this.connectedDevice = Object.assign({}, res.CurrentDevice!)
+        this.cdr.markForCheck();
         this.ledcontrolService.getDeviceSettings().subscribe(res => {
           this.deviceConfig = res
+          this.cdr.markForCheck();
         }
         );
       }
@@ -91,7 +94,7 @@ export class SettingsViewComponent implements OnInit, OnDestroy {
   }
 
   async onSelect() {
-    let dev = this.findDevice(this.connectedDevice.Name)
+    const dev = this.findDevice(this.connectedDevice.Name)
     this.settings!.CurrentDevice = Object.assign({}, dev!)
     console.error("onSave: current Device " + JSON.stringify(this.connectedDevice))
     this.ledcontrolService.setDevice(dev!)
@@ -109,6 +112,7 @@ export class SettingsViewComponent implements OnInit, OnDestroy {
       event.target.complete()
 
       this.ledcontrolService.setDevice(this.settings!.CurrentDevice)
+      this.cdr.markForCheck();
     })
   };
 
@@ -116,13 +120,15 @@ export class SettingsViewComponent implements OnInit, OnDestroy {
   async clickedRefreshDevice() {
     console.log("Disable Save")
     this.enableSave = false;
+    this.cdr.markForCheck();
     this.ledcontrolService.getDeviceSettings().subscribe({
       next: res => {
         this.deviceConfig = res;
         this.enableSave = true;
         console.log("Enable Save")
+        this.cdr.markForCheck();
       },
-      error: err => console.log(err),
+      error: err => { console.log(err); this.enableSave = true; this.cdr.markForCheck(); },
     }
     );
   }
@@ -146,6 +152,7 @@ export class SettingsViewComponent implements OnInit, OnDestroy {
     ).subscribe(res => {
       this.deviceConfig = res;
       this.enableSave = true;
+      this.cdr.markForCheck();
     });
   }
 
@@ -158,6 +165,7 @@ export class SettingsViewComponent implements OnInit, OnDestroy {
     ).subscribe(res => {
       this.deviceConfig = res;
       this.enableSave = true;
+      this.cdr.markForCheck();
     });
   }
 
@@ -174,6 +182,7 @@ export class SettingsViewComponent implements OnInit, OnDestroy {
       switchMap(() => this.ledcontrolService.getDeviceSettings())
     ).subscribe(res => {
       this.deviceConfig = res;
+      this.cdr.markForCheck();
     });
   }
 
@@ -202,10 +211,11 @@ export class SettingsViewComponent implements OnInit, OnDestroy {
         next: (res) => {
           if (res != null) {
             console.log("Succesful connected to " + res.SensorID)
-            let newDevice: Device = { Name: res.SensorID, Address: event.target.value }
+            const newDevice: Device = { Name: res.SensorID, Address: event.target.value }
             this.deviceConfig = res;
+            this.cdr.markForCheck();
             this.ledcontrolService.setDevice(newDevice)
-            let foundDevice = this.findDevice(newDevice.Name)
+            const foundDevice = this.findDevice(newDevice.Name)
             if (foundDevice == null) {
               this.localStorage.readSettings().then(newSettings => {
                 // remove other device with same name
@@ -217,6 +227,7 @@ export class SettingsViewComponent implements OnInit, OnDestroy {
                 console.warn('add device: ' + JSON.stringify(newDevice))
                 this.localStorage.writeSettings(newSettings)
                 this.settings = newSettings
+                this.cdr.markForCheck();
               })
             } else {
 
@@ -238,6 +249,7 @@ export class SettingsViewComponent implements OnInit, OnDestroy {
                 console.warn('changed device: ' + JSON.stringify(newDevice))
                 this.localStorage.writeSettings(newSettings)
                 this.settings = newSettings
+                this.cdr.markForCheck();
               })
             }
           } else { // todo improve
@@ -252,8 +264,8 @@ export class SettingsViewComponent implements OnInit, OnDestroy {
     }
   }
 
-  removeDevice(oldDevices: Device[], name: String) {
-    let newKnownDevices: Device[] = []
+  removeDevice(oldDevices: Device[], name: string) {
+    const newKnownDevices: Device[] = []
     oldDevices.forEach(oldDevice => {
       console.log(oldDevice)
       if (oldDevice.Name !== name) {

@@ -7,12 +7,16 @@
 </ion-header>
 
 <ion-content [fullscreen]="true">
+  <ion-refresher slot="fixed" (ionRefresh)="led.handleRefresh($event)">
+    <ion-refresher-content></ion-refresher-content>
+  </ion-refresher>
+
   <ion-header collapse="condense">
     <ion-toolbar>
       <ion-title size="large">LED</ion-title>
     </ion-toolbar>
   </ion-header>
 
-  <app-led-detail></app-led-detail>
- 
+  <app-led-detail #led></app-led-detail>
+
 </ion-content>

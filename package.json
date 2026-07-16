@@ -5,15 +5,19 @@
   "homepage": "https://ionicframework.com/",
   "scripts": {
     "ng": "ng",
+    "prestart": "node scripts/gen-version.js",
     "start": "ng serve",
+    "prebuild": "node scripts/gen-version.js",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
+    "pretest": "node scripts/gen-version.js",
     "test": "ng test",
     "lint": "ng lint"
   },
   "private": true,
   "dependencies": {
     "@angular/animations": "^22.0.0",
+    "@angular/cdk": "^22.0.0",
     "@angular/common": "^22.0.0",
     "@angular/compiler": "^22.0.0",
     "@angular/core": "^22.0.0",
@@ -26,22 +30,34 @@
     "@capacitor/core": "^8.4.0",
     "@capacitor/preferences": "^8.0.1",
     "@ionic/angular": "^8.8.9",
-    "@ionic/angular-server": "^8.8.9",
-    "@ionic/angular-toolkit": "^11.0.1",
     "rxjs": "^7.5.0",
     "tslib": "^2.3.0",
     "zone.js": "^0.16.2"
   },
   "devDependencies": {
+    "@angular-eslint/builder": "^22.1.0",
+    "@angular-eslint/eslint-plugin": "^22.1.0",
+    "@angular-eslint/eslint-plugin-template": "^22.1.0",
+    "@angular-eslint/template-parser": "^22.1.0",
     "@angular/build": "^22.0.0",
     "@angular/cli": "^22.0.0",
     "@angular/compiler-cli": "^22.0.0",
     "@capacitor/cli": "^8.4.0",
     "@ionic/cli": "^7.1.6",
+    "@types/jasmine": "^6.0.0",
     "@typescript-eslint/eslint-plugin": "^8.60.1",
     "@typescript-eslint/parser": "^8.60.1",
+    "angular-eslint": "^22.1.0",
+    "eslint": "^10.7.0",
     "istanbul-lib-instrument": "^6.0.3",
-    "typescript": "~6.0.3"
+    "jasmine-core": "^6.3.0",
+    "karma": "^6.4.4",
+    "karma-chrome-launcher": "^3.2.0",
+    "karma-coverage": "^2.2.1",
+    "karma-jasmine": "^5.1.0",
+    "karma-jasmine-html-reporter": "^2.2.0",
+    "typescript": "~6.0.3",
+    "typescript-eslint": "^8.64.0"
   },
   "description": "An Ionic project"
 }

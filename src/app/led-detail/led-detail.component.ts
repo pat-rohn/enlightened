@@ -1,17 +1,19 @@
-import { Component, OnInit, OnDestroy, ChangeDetectorRef, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, signal } from '@angular/core';
 import { Subject, firstValueFrom } from 'rxjs';
-import { finalize, skip, switchMap, takeUntil, tap } from 'rxjs/operators';
+import { debounceTime, skip, switchMap, takeUntil } from 'rxjs/operators';
 
-import { ActivatedRoute } from '@angular/router'
-import { debounceTime } from 'rxjs/operators';
+import { ActivatedRoute } from '@angular/router';
 import { LedcontrolService } from '../services/ledcontrol.service';
 import {
   LEDStatus, LEDStatusJSON, LabeledLedMode, LED_ON, LED_OFF, LED_PULSE,
   LED_CAMPFIRE, LED_COLORS, LED_SUNRISE, LEDMode,
   LightLevel, Level, LIGHT_FIRST, LIGHT_SECOND, LIGHT_THIRD
 } from '../ledstatus';
-import { Settings, DeviceSettings } from '../settings';
+import { Settings, DeviceSettings, Light } from '../settings';
 import { LocalstorageService } from '../services/localstorage.service';
+import { APP_VERSION } from '../../environments/version';
+
+type ColorChannel = 'red' | 'green' | 'blue' | 'brightness';
 
 @Component({
   standalone: false,
@@ -23,386 +25,222 @@ import { LocalstorageService } from '../services/localstorage.service';
 export class LedDetailComponent implements OnInit, OnDestroy {
   private readonly destroy$ = new Subject<void>();
   private readonly save$ = new Subject<void>();
-  ledStatusJson?: LEDStatusJSON;
-  enableSaveButton: boolean = false
-  selectedLevel: LightLevel = LIGHT_FIRST;
-  private loadingCount = 0;
 
-  constructor(private ledcontrolService: LedcontrolService,
-    private localStorage: LocalstorageService,
-    private activeRoute: ActivatedRoute,
-    private cdr: ChangeDetectorRef) {
-    this.activeRoute.params.pipe(skip(1), takeUntil(this.destroy$)).subscribe(params => {
-      console.log(JSON.stringify(params));
-      this.onRefresh();
-    });
-  }
+  readonly version = APP_VERSION;
 
-  get isReady(): boolean {
-    if (this.loadingCount < 0) {
-      console.warn("Loading count is negative: " + this.loadingCount);
-      this.loadingCount = 0;
-    }
-    if (this.loadingCount > 0) {
-      console.log("Loading count: " + this.loadingCount);
-    }
-    return this.loadingCount === 0;
-  }
-  private startLoading(): void {
-    this.loadingCount++;
-  }
-  private stopLoading(): void {
-    if (this.loadingCount > 0) this.loadingCount--;
-    this.cdr.detectChanges();
-  }
+  // Reactive state. Signal writes schedule change detection on their own, so a
+  // device reply that lands outside Angular's zone (CapacitorHttp) refreshes the
+  // view without any NgZone.run()/detectChanges() plumbing.
+  readonly ledStatus = signal<LEDStatus>({
+    red: 0, green: 0, blue: 0, brightness: 35, mode: LED_OFF, message: 'Not Connected',
+  });
+  readonly deviceSettings = signal<DeviceSettings | undefined>(undefined);
+  readonly settings = signal<Settings | undefined>(undefined);
+
+  // User-driven, always mutated from in-zone DOM events — plain fields are fine.
   activeLevelConfiguration = false;
+  selectedLevel: LightLevel = LIGHT_FIRST;
 
-  ledStatus: LEDStatus = {
-    red: 0,
-    green: 0,
-    blue: 0,
-    brightness: 35,
-    mode: LED_OFF,
-    message: "Not Connected",
-  };
-  settings?: Settings;
-  deviceSettings?: DeviceSettings;
+  readonly ledModes: LabeledLedMode[] = [LED_ON, LED_OFF, LED_CAMPFIRE, LED_COLORS, LED_SUNRISE, LED_PULSE];
+  readonly lightLevels: LightLevel[] = [LIGHT_FIRST, LIGHT_SECOND, LIGHT_THIRD];
 
-  ledModes: LabeledLedMode[] = [
-    LED_ON,
-    LED_OFF,
-    LED_CAMPFIRE,
-    LED_COLORS,
-    LED_SUNRISE,
-    LED_PULSE,
-  ];
+  constructor(
+    private ledcontrolService: LedcontrolService,
+    private localStorage: LocalstorageService,
+    private activeRoute: ActivatedRoute) {
+    this.activeRoute.params.pipe(skip(1), takeUntil(this.destroy$)).subscribe(() => this.onRefresh());
+  }
 
-  lightLevels: LightLevel[] = [
-    LIGHT_FIRST,
-    LIGHT_SECOND,
-    LIGHT_THIRD,
-  ];
+  async ngOnInit(): Promise<void> {
+    const settings = await this.localStorage.readSettings();
+    this.settings.set(settings);
+    this.ledcontrolService.setDevice(settings.CurrentDevice);
 
+    // Coalesce rapid edits into one write; a newer save cancels an in-flight one.
+    this.save$.pipe(
+      takeUntil(this.destroy$),
+      debounceTime(300),
+      switchMap(() => this.ledcontrolService.saveStatus(this.getJson())),
+    ).subscribe({
+      next: (res) => console.log('Saved LED status: ' + JSON.stringify(res)),
+      error: (err) => console.error('Save failed: ' + err),
+    });
+
+    this.onRefresh();
+  }
 
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
   }
 
-  async ngOnInit() {
-    console.log("On init");
-    this.settings = await this.localStorage.readSettings();
-    this.ledcontrolService.setDevice(this.settings.CurrentDevice);
+  // Passed to <ion-range [pinFormatter]> — arrows keep `this` unbound-safe.
+  readonly pinFormatter = (value: number): string => `${value}%`;
+  readonly colorPin = (value: number): string => `${value}`;
 
-    this.save$.pipe(
-      takeUntil(this.destroy$),
-      debounceTime(300),   // wait 300ms of silence before firing
-      tap(() => this.startLoading()),   // one start per request that actually fires
-      switchMap(() => this.ledcontrolService.saveStatus(this.getJson()).pipe(
-        finalize(() => this.stopLoading())   // runs on next, error, and switchMap cancel
-      ))
-    ).subscribe({
-      next: (ledJson) => {
-        console.log('Answer: ' + JSON.stringify(ledJson));
-      },
-      error: (error) => {
-        console.error('Observer got an error: ' + error);
-        this.ledStatus = {
-          red: 0, green: 0, blue: 0, brightness: 0,
-          message: 'No connection', mode: LED_OFF
-        };
-      }
-    });
-
-    this.onRefresh();
+  // --- Sliders --------------------------------------------------------------
+  onColorInput(channel: ColorChannel, ev: Event): void {
+    const value = Number((ev as CustomEvent).detail?.value ?? 0);
+    this.ledStatus.update((s) => ({ ...s, [channel]: value }));
   }
 
-  pinFormatter(value: number) {
-    return `${value}%`;
-  }
-
-  onSliderChange(ev: Event) {
+  onSliderEnd(): void {
     this.onSave();
     if (this.activeLevelConfiguration) {
-      switch (this.selectedLevel.id) {
-        case Level.First:
-          this.deviceSettings!.LightLow.Red = this.ledStatus.red
-          this.deviceSettings!.LightLow.Green = this.ledStatus.green
-          this.deviceSettings!.LightLow.Blue = this.ledStatus.blue
-          break;
-        case Level.Second:
-          this.deviceSettings!.LightMedium.Red = this.ledStatus.red
-          this.deviceSettings!.LightMedium.Green = this.ledStatus.green
-          this.deviceSettings!.LightMedium.Blue = this.ledStatus.blue
-          break;
-        case Level.Third:
-          this.deviceSettings!.LightHigh.Red = this.ledStatus.red
-          this.deviceSettings!.LightHigh.Green = this.ledStatus.green
-          this.deviceSettings!.LightHigh.Blue = this.ledStatus.blue
-          break;
-      }
+      this.writeLevelColors(this.selectedLevel.id);
     }
   }
 
-
+  // --- Mode / level selects -------------------------------------------------
   onSelectChange(value: LabeledLedMode): void {
-    if (this.ledStatus) {
-      this.ledStatus.mode = value;
-      if (this.ledStatus.mode == null) {
-        console.log("mode not defined: " + value);
-      }
-      this.onSave();   // route through save$ queue so it can't race a slider save
-    }
+    this.ledStatus.update((s) => ({ ...s, mode: value }));
+    this.onSave();
   }
 
   onSelectLevel(value: LightLevel): void {
-    if (this.deviceSettings == null) {
-      return
-    }
-    switch (value.id) {
-      case Level.First:
-        this.ledStatus.red = this.deviceSettings!.LightLow.Red
-        this.ledStatus.green = this.deviceSettings!.LightLow.Green
-        this.ledStatus.blue = this.deviceSettings!.LightLow.Blue
-        break;
-      case Level.Second:
-        this.ledStatus.red = this.deviceSettings!.LightMedium.Red
-        this.ledStatus.green = this.deviceSettings!.LightMedium.Green
-        this.ledStatus.blue = this.deviceSettings!.LightMedium.Blue
-        break;
-      case Level.Third:
-        this.ledStatus.red = this.deviceSettings!.LightHigh.Red
-        this.ledStatus.green = this.deviceSettings!.LightHigh.Green
-        this.ledStatus.blue = this.deviceSettings!.LightHigh.Blue
-        break;
-    }
-    this.applyLEDStatus(this.getJson())
-    this.onSave()
+    const rgb = this.readLevelColors(value.id);
+    if (rgb == null) return;
+    this.ledStatus.update((s) => ({ ...s, red: rgb.Red, green: rgb.Green, blue: rgb.Blue }));
+    this.onSave();
   }
 
   onSaveColor(): void {
-    switch (this.selectedLevel.id) {
-      case Level.First:
-        this.deviceSettings!.LightLow.Red = this.ledStatus.red
-        this.deviceSettings!.LightLow.Green = this.ledStatus.green
-        this.deviceSettings!.LightLow.Blue = this.ledStatus.blue
-        break;
-      case Level.Second:
-        this.deviceSettings!.LightMedium.Red = this.ledStatus.red
-        this.deviceSettings!.LightMedium.Green = this.ledStatus.green
-        this.deviceSettings!.LightMedium.Blue = this.ledStatus.blue
-        break;
-      case Level.Third:
-        this.deviceSettings!.LightHigh.Red = this.ledStatus.red
-        this.deviceSettings!.LightHigh.Green = this.ledStatus.green
-        this.deviceSettings!.LightHigh.Blue = this.ledStatus.blue
-        break;
-    }
-    this.enableSaveButton = false
-    this.ledcontrolService.saveDeviceSettings(this.deviceSettings!).subscribe({
-      next: (res) => {
-        if (res != null) {
-          this.enableSaveButton = true
-        }
-      },
-      error: (error) => {
-        console.error('Failed to connect to : ' + this.settings?.CurrentDevice.Name + ' ' + error)
-        throw error
-      }
+    const ds = this.writeLevelColors(this.selectedLevel.id);
+    if (ds == null) return;
+    this.ledcontrolService.saveDeviceSettings(ds).subscribe({
+      next: (res) => console.log('Saved device settings: ' + JSON.stringify(res)),
+      error: (err) => console.error('Failed to connect to: ' + this.settings()?.CurrentDevice.Name + ' ' + err),
     });
-  }
-
-  compareLevelFn(e1: LightLevel, e2: LightLevel): boolean {
-    return e1 && e2 ? e1.id === e2.id : e1 === e2;
-  }
-
-  onSave(): void {
-    if (this.ledStatus) {
-      this.save$.next();
-    }
-  }
-
-  onPower(): void {
-    if (this.ledStatus) {
-      if (this.ledStatus.mode != LED_OFF) {
-        this.ledStatus.mode = LED_OFF;
-        console.log("Power button: turn off");
-      } else {
-        this.ledStatus.mode = LED_ON;
-        console.log("Power button: turn on");
-      }
-      this.onSave();
-    }
-  }
-
-  onButton1(): void {
-    this.startLoading();
-    this.ledcontrolService.pressButton("1").pipe(
-      switchMap(() => {
-        this.enableSaveButton = true;
-        return this.ledcontrolService.getLedStatus();
-      })
-    ).subscribe({
-      next: (ledJson) => {
-        console.log('Answer:' + JSON.stringify(ledJson));
-        this.applyLEDStatus(ledJson);
-        this.stopLoading();
-      },
-      error: (error) => {
-        console.error('Observer got an error: ' + error);
-        this.stopLoading();
-      }
-    });
-  }
-
-  onButton2(): void {
-    this.startLoading();
-    this.ledcontrolService.pressButton("2").pipe(
-      switchMap(() => {
-        this.enableSaveButton = true;
-        return this.ledcontrolService.getLedStatus();
-      })
-    ).subscribe({
-      next: (ledJson) => {
-        console.log('Answer:' + JSON.stringify(ledJson));
-        this.applyLEDStatus(ledJson);
-        this.stopLoading();
-      },
-      error: (error) => {
-        console.error('Observer got an error: ' + error);
-        this.stopLoading();
-      }
-    });
-  }
-
-  handleRefresh(event: any) {
-    this.onRefresh().then(_ => {
-      console.log("handle Refresher complete")
-      event.target.complete()
-    })
-  };
-
-  async onRefresh() {
-    this.startLoading();
-    try {
-      const res = await firstValueFrom(this.ledcontrolService.getDeviceSettings());
-      if (res != null) {
-        this.enableSaveButton = true;
-        this.deviceSettings = res;
-        const ledJson = await firstValueFrom(this.ledcontrolService.getLedStatus());
-        if (ledJson != null) {
-          this.applyLEDStatus(ledJson);
-        }
-      }
-    } catch (error) {
-      console.error('Observer got an error: ' + error);
-      this.ledStatus = {
-        red: 0, green: 0, blue: 0, brightness: 0,
-        message: 'No connection', mode: LED_OFF
-      };
-    } finally {
-      this.stopLoading();
-    }
-  }
-
-  onChangeColor() {
-    this.startLoading();
-    const ledstatus = this.getJson();
-    const color = Math.floor(Math.random() * 6);
-    switch (color) {
-      case 0:
-        console.log("red");
-        this.ledStatus!.message = "red";
-        ledstatus.Red = 100; ledstatus.Blue = 0; ledstatus.Green = 0;
-        break;
-      case 1:
-        console.log("blue");
-        this.ledStatus!.message = "blue";
-        ledstatus.Red = 0; ledstatus.Blue = 100; ledstatus.Green = 0;
-        break;
-      case 2:
-        console.log("green");
-        this.ledStatus!.message = "green";
-        ledstatus.Red = 0; ledstatus.Blue = 0; ledstatus.Green = 100;
-        break;
-      case 3:
-        console.log("bg");
-        this.ledStatus!.message = "bg";
-        ledstatus.Red = 0; ledstatus.Blue = 50; ledstatus.Green = 50;
-        break;
-      case 4:
-        console.log("rg");
-        this.ledStatus!.message = "rg";
-        ledstatus.Red = 50; ledstatus.Blue = 0; ledstatus.Green = 50;
-        break;
-      case 5:
-        console.log("rb");
-        this.ledStatus!.message = "rb";
-        ledstatus.Red = 50; ledstatus.Blue = 50; ledstatus.Green = 0;
-        break;
-    }
-    this.applyLEDStatus(ledstatus);
-    this.onSave();
   }
 
   compareFn(e1: LabeledLedMode, e2: LabeledLedMode): boolean {
     return e1 && e2 ? e1.id === e2.id : e1 === e2;
   }
 
-  applyLEDStatus(jsonStatus: LEDStatusJSON) {
-    if (this.ledStatus == null) {
-      this.ledStatus = {
-        red: jsonStatus.Red,
-        green: jsonStatus.Green,
-        blue: jsonStatus.Blue,
-        brightness: jsonStatus.Brightness,
-        mode: LED_OFF,
-        message: jsonStatus.Message
-      }
-    } else {
+  compareLevelFn(e1: LightLevel, e2: LightLevel): boolean {
+    return e1 && e2 ? e1.id === e2.id : e1 === e2;
+  }
 
-      this.ledStatus.message = jsonStatus.Message;
-      this.ledStatus.brightness = jsonStatus.Brightness;
-      this.ledStatus.red = jsonStatus.Red;
-      this.ledStatus.green = jsonStatus.Green;
-      this.ledStatus.blue = jsonStatus.Blue;
-      switch (jsonStatus.Mode) {
-        case LEDMode.on:
-          this.ledStatus.mode = LED_ON;
-          break
-        case LEDMode.off:
-          this.ledStatus.mode = LED_OFF;
-          break
-        case LEDMode.campfire:
-          this.ledStatus.mode = LED_CAMPFIRE;
-          break
-        case LEDMode.colorful:
-          this.ledStatus.mode = LED_COLORS;
-          break
-        case LEDMode.pulse:
-          this.ledStatus.mode = LED_PULSE;
-          break
-        case LEDMode.sunrise:
-          this.ledStatus.mode = LED_SUNRISE;
-          break
-        default:
-          this.ledStatus.mode = LED_OFF;
-          break
-      }
+  // --- Buttons --------------------------------------------------------------
+  onSave(): void {
+    this.save$.next();
+  }
 
+  onPower(): void {
+    this.ledStatus.update((s) => ({ ...s, mode: s.mode !== LED_OFF ? LED_OFF : LED_ON }));
+    this.onSave();
+  }
+
+  onChangeColor(): void {
+    const palette: Array<[string, number, number, number]> = [
+      ['red', 255, 0, 0],
+      ['blue', 0, 0, 255],
+      ['green', 0, 255, 0],
+      ['bg', 0, 128, 128],
+      ['rg', 128, 128, 0],
+      ['rb', 128, 0, 128],
+    ];
+    const [message, red, green, blue] = palette[Math.floor(Math.random() * palette.length)];
+    this.ledStatus.update((s) => ({ ...s, red, green, blue, message }));
+    this.onSave();
+  }
+
+  onButton1(): void {
+    this.pressButton('1');
+  }
+
+  onButton2(): void {
+    this.pressButton('2');
+  }
+
+  private pressButton(nr: string): void {
+    this.ledcontrolService.pressButton(nr).pipe(
+      switchMap(() => this.ledcontrolService.getLedStatus()),
+    ).subscribe({
+      next: (led) => { if (led != null) this.applyLEDStatus(led); },
+      error: (err) => console.error('Button ' + nr + ' failed: ' + err),
+    });
+  }
+
+  // --- Refresh --------------------------------------------------------------
+  handleRefresh(event: any): void {
+    this.onRefresh().then(() => event.target.complete());
+  }
+
+  async onRefresh(): Promise<void> {
+    try {
+      const res = await firstValueFrom(this.ledcontrolService.getDeviceSettings());
+      if (res == null) return;
+      this.deviceSettings.set(res);
+      const led = await firstValueFrom(this.ledcontrolService.getLedStatus());
+      if (led != null) this.applyLEDStatus(led);
+    } catch (err) {
+      console.error('Refresh failed: ' + err);
+      this.ledStatus.set({ red: 0, green: 0, blue: 0, brightness: 0, message: 'No connection', mode: LED_OFF });
     }
-    console.log("Mode: " + this.ledStatus.mode.id);
+  }
+
+  // --- Helpers --------------------------------------------------------------
+  private levelKey(id: Level): 'LightLow' | 'LightMedium' | 'LightHigh' {
+    return id === Level.First ? 'LightLow' : id === Level.Second ? 'LightMedium' : 'LightHigh';
+  }
+
+  private readLevelColors(id: Level): Light | undefined {
+    const ds = this.deviceSettings();
+    if (ds == null) return undefined;
+    const lvl = ds[this.levelKey(id)];
+    return { Red: lvl.Red, Green: lvl.Green, Blue: lvl.Blue };
+  }
+
+  // Copies the current colour into the given level and returns the updated
+  // settings (or undefined if none are loaded yet).
+  private writeLevelColors(id: Level): DeviceSettings | undefined {
+    const ds = this.deviceSettings();
+    if (ds == null) return undefined;
+    const s = this.ledStatus();
+    const light: Light = { Red: s.red, Green: s.green, Blue: s.blue };
+    const next: DeviceSettings = {
+      ...ds,
+      LightLow: id === Level.First ? light : ds.LightLow,
+      LightMedium: id === Level.Second ? light : ds.LightMedium,
+      LightHigh: id === Level.Third ? light : ds.LightHigh,
+    };
+    this.deviceSettings.set(next);
+    return next;
+  }
+
+  applyLEDStatus(json: LEDStatusJSON): void {
+    this.ledStatus.set({
+      red: json.Red,
+      green: json.Green,
+      blue: json.Blue,
+      brightness: json.Brightness,
+      message: json.Message,
+      mode: this.toLabeledMode(json.Mode),
+    });
+  }
+
+  private toLabeledMode(mode: number): LabeledLedMode {
+    switch (mode) {
+      case LEDMode.on: return LED_ON;
+      case LEDMode.off: return LED_OFF;
+      case LEDMode.campfire: return LED_CAMPFIRE;
+      case LEDMode.colorful: return LED_COLORS;
+      case LEDMode.pulse: return LED_PULSE;
+      case LEDMode.sunrise: return LED_SUNRISE;
+      default: return LED_OFF;
+    }
   }
 
   getJson(): LEDStatusJSON {
-    const jsonLED: LEDStatusJSON = {
-      Red: this.ledStatus!.red,
-      Green: this.ledStatus!.green,
-      Blue: this.ledStatus!.blue,
-      Brightness: this.ledStatus!.brightness,
-      Mode: this.ledStatus!.mode.id,
-      Message: this.ledStatus!.message,
-    }
-    return jsonLED;
+    const s = this.ledStatus();
+    return {
+      Red: s.red,
+      Green: s.green,
+      Blue: s.blue,
+      Brightness: s.brightness,
+      Mode: s.mode.id,
+      Message: s.message,
+    };
   }
 }

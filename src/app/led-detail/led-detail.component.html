@@ -1,44 +1,27 @@
 <div>
-  <ion-refresher
-    slot="fixed"
-    (ionRefresh)="handleRefresh($event)"
-    pullFactor="0.5"
-    pullMin="80"
-    pullMax="200"
-  >
-    <ion-refresher-content></ion-refresher-content>
-  </ion-refresher>
-  <div *ngIf="ledStatus && settings">
+  <div *ngIf="ledStatus() && settings()">
     <ion-item>
       <ion-label>Device Name</ion-label>
       <ion-input
-        *ngIf="deviceSettings"
+        *ngIf="deviceSettings()"
         type="text"
-        ngDefaultControl
-        [(ngModel)]="deviceSettings.SensorID"
+        [ngModel]="deviceSettings()?.SensorID"
         readonly
         text-middle
-
       >
       </ion-input>
     </ion-item>
-    <div
-      *ngIf="
-        deviceSettings &&
-        deviceSettings.SunriseSettings &&
-        deviceSettings.SunriseSettings.IsActivated
-      "
-    >
+    <div *ngIf="deviceSettings()?.SunriseSettings?.IsActivated">
       <ion-item>
         <ion-icon name="warning-outline" style="padding: 30px"></ion-icon>
         <ion-label color="warning">Sunrise Alarm is active </ion-label>
       </ion-item>
     </div>
     <div>
-      <ion-button [disabled]="!isReady" (click)="onPower()">
+      <ion-button (click)="onPower()">
         <ion-icon name="power" slot="icon-only" size="large"></ion-icon>
       </ion-button>
-      <ion-button [disabled]="!isReady" (click)="onChangeColor()">
+      <ion-button (click)="onChangeColor()">
         <ion-icon
           name="repeat-outline"
           slot="icon-only"
@@ -46,12 +29,12 @@
         ></ion-icon>
       </ion-button>
     </div>
-    <div *ngIf="deviceSettings && !deviceSettings.SunriseSettings.IsActivated">
+    <div *ngIf="deviceSettings() && !deviceSettings()!.SunriseSettings.IsActivated">
       <mat-form-field appearance="fill">
         <mat-label>Mode</mat-label>
         <mat-select
           (selectionChange)="onSelectChange($event.value)"
-          [(ngModel)]="ledStatus.mode"
+          [ngModel]="ledStatus().mode"
           [compareWith]="compareFn"
         >
           <mat-option *ngFor="let mode of ledModes" [value]="mode">
@@ -62,12 +45,12 @@
       <br />
     </div>
 
-    <div *ngIf="deviceSettings && deviceSettings.SunriseSettings">
+    <div *ngIf="deviceSettings()?.SunriseSettings">
       <ion-range
-        [disabled]="!isReady"
         class="slider_brightness"
-        (ionKnobMoveEnd)="onSliderChange($event)"
-        [(ngModel)]="ledStatus.brightness"
+        [value]="ledStatus().brightness"
+        (ionInput)="onColorInput('brightness', $event)"
+        (ionKnobMoveEnd)="onSliderEnd()"
         [pinFormatter]="pinFormatter"
         [pin]="true"
       >
@@ -75,48 +58,45 @@
       </ion-range>
 
       <ion-range
-        [disabled]="!isReady"
         class="slider_red"
-        (ionKnobMoveEnd)="onSliderChange($event)"
-        [(ngModel)]="ledStatus.red"
-        [pinFormatter]="pinFormatter"
+        max="255"
+        [value]="ledStatus().red"
+        (ionInput)="onColorInput('red', $event)"
+        (ionKnobMoveEnd)="onSliderEnd()"
+        [pinFormatter]="colorPin"
         [pin]="true"
       >
         <ion-icon slot="end" name="sunny-outline"></ion-icon>
       </ion-range>
 
       <ion-range
-        [disabled]="!isReady"
         class="slider_green"
-        (ionKnobMoveEnd)="onSliderChange($event)"
-        [(ngModel)]="ledStatus.green"
-        [pinFormatter]="pinFormatter"
+        max="255"
+        [value]="ledStatus().green"
+        (ionInput)="onColorInput('green', $event)"
+        (ionKnobMoveEnd)="onSliderEnd()"
+        [pinFormatter]="colorPin"
         [pin]="true"
       >
         <ion-icon slot="end" name="sunny-outline"></ion-icon>
       </ion-range>
 
       <ion-range
-        [disabled]="!isReady"
         class="slider_blue"
-        (ionKnobMoveEnd)="onSliderChange($event)"
-        [(ngModel)]="ledStatus.blue"
-        [pinFormatter]="pinFormatter"
+        max="255"
+        [value]="ledStatus().blue"
+        (ionInput)="onColorInput('blue', $event)"
+        (ionKnobMoveEnd)="onSliderEnd()"
+        [pinFormatter]="colorPin"
         [pin]="true"
       >
         <ion-icon slot="end" name="sunny-outline"></ion-icon>
       </ion-range>
       <div>
-        <ion-button
-          [disabled]="!isReady || !enableSaveButton"
-          (click)="onButton1()"
-        >
+        <ion-button (click)="onButton1()">
           <ion-icon name="bulb-outline" slot="icon-only" size="large"></ion-icon>
         </ion-button>
-        <ion-button
-          [disabled]="!isReady || !enableSaveButton"
-          (click)="onButton2()"
-        >
+        <ion-button (click)="onButton2()">
           <ion-icon name="bulb-outline" slot="icon-only" size="large"></ion-icon>
         </ion-button>
       </div>
@@ -144,17 +124,17 @@
       </div>
 
       <div *ngIf="activeLevelConfiguration">
-        <ion-button
-          [disabled]="!isReady || !enableSaveButton"
-          (click)="onSaveColor()"
-        >
+        <ion-button (click)="onSaveColor()">
           <ion-icon name="save" slot="icon-only" size="large"></ion-icon>
         </ion-button>
       </div>
     </div>
     <hr />
     <ion-item>
-      <ion-label color="medium">{{ ledStatus.message }}</ion-label>
+      <ion-label color="medium">{{ ledStatus().message }}</ion-label>
+    </ion-item>
+    <ion-item lines="none">
+      <ion-note slot="end" style="font-size: 0.7rem">build {{ version }}</ion-note>
     </ion-item>
   </div>
 </div>

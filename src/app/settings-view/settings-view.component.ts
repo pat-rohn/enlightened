@@ -1,10 +1,8 @@
-import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
-import { Subject } from 'rxjs';
-import { skip, switchMap, takeUntil } from 'rxjs/operators';
+import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
+import { firstValueFrom } from 'rxjs';
 import { DeviceSettings, Settings, Device } from '../settings';
 import { LocalstorageService } from '../services/localstorage.service'
 import { LedcontrolService } from '../services/ledcontrol.service';
-import { ActivatedRoute } from '@angular/router';
 import { AlertController } from '@ionic/angular';
 
 const DEFAULT_WIFI_SSID = 'Enlighted';
@@ -17,9 +15,7 @@ const DEFAULT_WIFI_PASSWORD = 'enlighten-me';
   changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./settings-view.component.scss'],
 })
-export class SettingsViewComponent implements OnInit, OnDestroy {
-  private readonly destroy$ = new Subject<void>();
-
+export class SettingsViewComponent implements OnInit {
   settings: Settings = this.localStorage.settings;
   connectedDevice: Device = { Name: "init", Address: "0" }
   deviceConfig?: DeviceSettings;
@@ -71,43 +67,39 @@ export class SettingsViewComponent implements OnInit, OnDestroy {
   constructor(
     private localStorage: LocalstorageService,
     private ledcontrolService: LedcontrolService,
-    private activeRoute: ActivatedRoute,
     private alertController: AlertController,
     private cdr: ChangeDetectorRef) {
-    this.activeRoute.params.pipe(skip(1), takeUntil(this.destroy$)).subscribe(params => {
-      console.log(params["id"]);
-      this.clickedRefreshDevice();
-    });
-  }
-
-  ngOnDestroy(): void {
-    this.destroy$.next();
-    this.destroy$.complete();
   }
 
   async ngOnInit() {
     console.log("init view comp");
-    await this.localStorage.readSettings().then(
-      res => {
-        this.settings = res
-        this.ledcontrolService.setDevice(res.CurrentDevice)
-        this.connectedDevice = Object.assign({}, res.CurrentDevice!)
-        this.cdr.markForCheck();
-        this.ledcontrolService.getDeviceSettings().subscribe(res => {
-          this.deviceConfig = res
-          this.cdr.markForCheck();
-        }
-        );
+    const res = await this.localStorage.readSettings();
+    this.settings = res;
+    this.ledcontrolService.setDevice(res.CurrentDevice);
+    this.connectedDevice = Object.assign({}, res.CurrentDevice);
+    this.cdr.markForCheck();
+    try {
+      const config = await firstValueFrom(this.ledcontrolService.getDeviceSettings());
+      if (config != null) {
+        this.deviceConfig = config;
       }
-    );
+    } catch (err) {
+      console.error(err);
+    }
+    this.cdr.markForCheck();
   }
 
   async onSelect() {
     const dev = this.findDevice(this.connectedDevice.Name)
-    this.settings!.CurrentDevice = Object.assign({}, dev!)
-    console.error("onSave: current Device " + JSON.stringify(this.connectedDevice))
-    this.ledcontrolService.setDevice(dev!)
-    this.clickedRefreshDevice()
+    if (dev == null) {
+      console.error("onSelect: unknown device " + this.connectedDevice.Name)
+      return;
+    }
+    this.settings.CurrentDevice = Object.assign({}, dev)
+    console.log("onSelect: current Device " + JSON.stringify(this.connectedDevice))
+    // writeSettings persists the selection and calls setDevice() itself.
+    await this.localStorage.writeSettings(this.settings)
+    await this.clickedRefreshDevice()
   }
 
   compareDevice(o1: Device, o2: Device) {
@@ -115,12 +107,11 @@ export class SettingsViewComponent implements OnInit, OnDestroy {
   }
 
   handleRefresh(event: any) {
+    // Refresh the *current* device, not a possibly half-typed new address.
+    this.ledcontrolService.setDevice(this.settings.CurrentDevice)
     this.clickedRefreshDevice().then(_ => {
       console.log("handle Refresher complete")
-      this.enableSave = true;
       event.target.complete()
-
-      this.ledcontrolService.setDevice(this.settings!.CurrentDevice)
       this.cdr.markForCheck();
     })
   };
@@ -130,16 +121,17 @@ export class SettingsViewComponent implements OnInit, OnDestroy {
     console.log("Disable Save")
     this.enableSave = false;
     this.cdr.markForCheck();
-    this.ledcontrolService.getDeviceSettings().subscribe({
-      next: res => {
+    try {
+      const res = await firstValueFrom(this.ledcontrolService.getDeviceSettings());
+      if (res != null) {
         this.deviceConfig = res;
-        this.enableSave = true;
-        console.log("Enable Save")
-        this.cdr.markForCheck();
-      },
-      error: err => { console.log(err); this.enableSave = true; this.cdr.markForCheck(); },
+      }
+    } catch (err) {
+      console.log(err);
     }
-    );
+    this.enableSave = true;
+    console.log("Enable Save")
+    this.cdr.markForCheck();
   }
 
   async clickedApplyDeviceConfig() {
@@ -157,51 +149,74 @@ export class SettingsViewComponent implements OnInit, OnDestroy {
     }
     const apiToken = this.deviceConfig!.ApiToken;
     console.log(JSON.stringify(this.deviceConfig));
-    this.ledcontrolService.applyDeviceSettings(this.deviceConfig!).pipe(
-      switchMap(() => this.ledcontrolService.getDeviceSettings())
-    ).subscribe({
-      next: async res => {
-        await this.persistApiToken(apiToken);
+    try {
+      await firstValueFrom(this.ledcontrolService.applyDeviceSettings(this.deviceConfig!));
+      const res = await firstValueFrom(this.ledcontrolService.getDeviceSettings());
+      await this.persistApiToken(apiToken);
+      if (res != null) {
         this.deviceConfig = res;
-        this.enableSave = true;
-        this.cdr.markForCheck();
-      },
-      error: err => {
-        console.error(err);
-        this.enableSave = true;
-        this.cdr.markForCheck();
-      },
-    });
+      }
+    } catch (err) {
+      console.error(err);
+    }
+    this.enableSave = true;
+    this.cdr.markForCheck();
   }
 
   async clickedRestart() {
     console.log("Restart");
     this.enableSave = false;
+    this.cdr.markForCheck();
     console.log(JSON.stringify(this.deviceConfig));
-    this.ledcontrolService.restartDevice().pipe(
-      switchMap(() => this.ledcontrolService.getDeviceSettings())
-    ).subscribe(res => {
-      this.deviceConfig = res;
-      this.enableSave = true;
-      this.cdr.markForCheck();
-    });
+    try {
+      await firstValueFrom(this.ledcontrolService.restartDevice());
+    } catch (err) {
+      // The restart request itself often dies mid-reboot — that's expected.
+      console.error(err);
+    }
+    // The device is unreachable while it reboots; wait, then retry the refetch
+    // a few times instead of blanking the form on the first failure.
+    await this.delay(4000);
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        const res = await firstValueFrom(this.ledcontrolService.getDeviceSettings());
+        if (res != null) {
+          this.deviceConfig = res;
+          break;
+        }
+      } catch (err) {
+        console.error(err);
+        await this.delay(2000);
+      }
+    }
+    this.enableSave = true;
+    this.cdr.markForCheck();
   }
 
   async resetWiFi() {
-    if (this.deviceConfig != null) {
-      this.deviceConfig.IsConfigured = false;
-      this.deviceConfig.ServerAddress = "http://localhost:3000";
-      this.deviceConfig.WiFiName = DEFAULT_WIFI_SSID;
-      this.deviceConfig.WiFiPassword = DEFAULT_WIFI_PASSWORD;
-      this.deviceConfig.IsOfflineMode = true;
+    if (this.deviceConfig == null) {
+      return;
     }
+    this.deviceConfig.IsConfigured = false;
+    this.deviceConfig.ServerAddress = "http://localhost:3000";
+    this.deviceConfig.WiFiName = DEFAULT_WIFI_SSID;
+    this.deviceConfig.WiFiPassword = DEFAULT_WIFI_PASSWORD;
+    this.deviceConfig.IsOfflineMode = true;
 
-    this.ledcontrolService.applyDeviceSettings(this.deviceConfig!).pipe(
-      switchMap(() => this.ledcontrolService.getDeviceSettings())
-    ).subscribe(res => {
-      this.deviceConfig = res;
-      this.cdr.markForCheck();
-    });
+    try {
+      await firstValueFrom(this.ledcontrolService.applyDeviceSettings(this.deviceConfig));
+      const res = await firstValueFrom(this.ledcontrolService.getDeviceSettings());
+      if (res != null) {
+        this.deviceConfig = res;
+      }
+    } catch (err) {
+      console.error(err);
+    }
+    this.cdr.markForCheck();
+  }
+
+  private delay(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
   }
 
   private isValidDeviceAddress(address: string): boolean {
@@ -297,7 +312,6 @@ export class SettingsViewComponent implements OnInit, OnDestroy {
         },
         error: (error) => {
           console.error('Failed to connect to : ' + deviceAddress + ' ' + error)
-          throw error
         }
       });
     }

@@ -5,6 +5,7 @@ import { DeviceSettings, Settings, Device } from '../settings';
 import { LocalstorageService } from '../services/localstorage.service'
 import { LedcontrolService } from '../services/ledcontrol.service';
 import { ActivatedRoute } from '@angular/router';
+import { AlertController } from '@ionic/angular';
 
 const DEFAULT_WIFI_SSID = 'Enlighted';
 const DEFAULT_WIFI_PASSWORD = 'enlighten-me';
@@ -64,6 +65,7 @@ export class SettingsViewComponent implements OnInit, OnDestroy {
     private localStorage: LocalstorageService,
     private ledcontrolService: LedcontrolService,
     private activeRoute: ActivatedRoute,
+    private alertController: AlertController,
     private cdr: ChangeDetectorRef) {
     this.activeRoute.params.pipe(skip(1), takeUntil(this.destroy$)).subscribe(params => {
       console.log(params["id"]);
@@ -262,6 +264,43 @@ export class SettingsViewComponent implements OnInit, OnDestroy {
         }
       });
     }
+  }
+
+  async confirmRemoveDevice(device: Device) {
+    const alert = await this.alertController.create({
+      header: 'Remove device?',
+      message: 'This will remove "' + device.Name + '" (' + device.Address + ') from the list.',
+      buttons: [
+        {
+          text: 'No',
+          role: 'cancel',
+          cssClass: 'alert-button-cancel',
+        },
+        {
+          text: 'Yes',
+          cssClass: 'alert-button-confirm',
+          handler: () => {
+            this.removeKnownDevice(device);
+          },
+        },
+      ],
+    });
+    await alert.present();
+  }
+
+  private async removeKnownDevice(device: Device) {
+    const newSettings = await this.localStorage.readSettings();
+    newSettings.KnownDevices = this.removeDevice(newSettings.KnownDevices, device.Name);
+    if (newSettings.KnownDevices.length === 0) {
+      newSettings.KnownDevices = [{ Name: "Default", Address: "192.168.4.1" }];
+    }
+    if (newSettings.CurrentDevice == null || newSettings.CurrentDevice.Name === device.Name) {
+      newSettings.CurrentDevice = newSettings.KnownDevices[0];
+      this.connectedDevice = Object.assign({}, newSettings.CurrentDevice);
+    }
+    await this.localStorage.writeSettings(newSettings);
+    this.settings = newSettings;
+    this.cdr.markForCheck();
   }
 
   removeDevice(oldDevices: Device[], name: string) {

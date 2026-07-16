@@ -32,6 +32,20 @@
       ></ion-input>
     </ion-item>
     <ion-item lines="inset">
+      <ion-title>Known Devices</ion-title>
+    </ion-item>
+    <ion-item *ngFor="let item of settings.KnownDevices">
+      <ion-label>{{ item.Name }} ({{ item.Address }})</ion-label>
+      <ion-button
+        slot="end"
+        fill="clear"
+        color="danger"
+        (click)="confirmRemoveDevice(item)"
+      >
+        <ion-icon slot="icon-only" name="trash"></ion-icon>
+      </ion-button>
+    </ion-item>
+    <ion-item lines="inset">
       <ion-title>Device Settings</ion-title>
     </ion-item>
     <br />

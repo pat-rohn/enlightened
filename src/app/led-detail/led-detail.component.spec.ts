@@ -1,7 +1,6 @@
 import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
-import { NEVER, of } from 'rxjs';
+import { NEVER, of, throwError } from 'rxjs';
 
 import { LedDetailComponent } from './led-detail.component';
 import { LedcontrolService } from '../services/ledcontrol.service';
@@ -33,7 +32,6 @@ describe('LedDetailComponent', () => {
       providers: [
         { provide: LedcontrolService, useValue: ledSvc },
         { provide: LocalstorageService, useValue: storageSvc },
-        { provide: ActivatedRoute, useValue: { params: of({}) } },
       ],
       schemas: [CUSTOM_ELEMENTS_SCHEMA],
     });
@@ -70,6 +68,24 @@ describe('LedDetailComponent', () => {
     tick(300);                       // request 1 in flight (never completes)
     component.onSave();
     tick(300);                       // cancels request 1, request 2 completes
+
+    expect(ledSvc.saveStatus).toHaveBeenCalledTimes(2);
+  }));
+
+  // A failed save must not kill the save pipeline — later saves still go out.
+  it('keeps saving after a save request errored', fakeAsync(() => {
+    component.ngOnInit();
+    tick(300);
+    ledSvc.saveStatus.calls.reset();
+    ledSvc.saveStatus.and.returnValues(
+      throwError(() => new Error('device down')) as any,
+      of({} as any),
+    );
+
+    component.onSave();
+    tick(300);                       // request 1 errors
+    component.onSave();
+    tick(300);                       // request 2 must still be attempted
 
     expect(ledSvc.saveStatus).toHaveBeenCalledTimes(2);
   }));

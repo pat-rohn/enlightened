@@ -1,10 +1,8 @@
-import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
-import { Subject, firstValueFrom } from 'rxjs';
-import { skip, takeUntil } from 'rxjs/operators';
+import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
+import { firstValueFrom } from 'rxjs';
 import { DeviceSettings, SunriseSettings, Settings } from '../settings'
 import { LocalstorageService } from '../services/localstorage.service'
 import { LedcontrolService } from '../services/ledcontrol.service';
-import { ActivatedRoute } from '@angular/router';
 
 
 @Component({
@@ -14,9 +12,7 @@ import { ActivatedRoute } from '@angular/router';
   changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./sunrise.component.scss'],
 })
-export class SunriseComponent implements OnInit, OnDestroy {
-  private readonly destroy$ = new Subject<void>();
-
+export class SunriseComponent implements OnInit {
   settings?: Settings;
   sunriseSettings?: SunriseSettings;
   deviceSettings?: DeviceSettings;
@@ -28,20 +24,8 @@ export class SunriseComponent implements OnInit, OnDestroy {
   constructor(
     private localStorage: LocalstorageService,
     private ledcontrolService: LedcontrolService,
-    private activatedRoute: ActivatedRoute,
     private cdr: ChangeDetectorRef) {
-      this.activatedRoute.params.pipe(skip(1), takeUntil(this.destroy$)).subscribe(params => {
-        console.log(params["id"]);
-        this.clickedRefresh();
-      });
     }
-
-  ngOnDestroy(): void {
-    this.destroy$.next();
-    this.destroy$.complete();
-  }
-
-
 
   async ngOnInit() {
     console.log("init view comp");

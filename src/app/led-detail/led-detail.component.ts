@@ -1,8 +1,7 @@
 import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, signal } from '@angular/core';
-import { Subject, firstValueFrom } from 'rxjs';
-import { debounceTime, skip, switchMap, takeUntil } from 'rxjs/operators';
+import { EMPTY, Subject, firstValueFrom } from 'rxjs';
+import { catchError, debounceTime, switchMap, takeUntil } from 'rxjs/operators';
 
-import { ActivatedRoute } from '@angular/router';
 import { LedcontrolService } from '../services/ledcontrol.service';
 import {
   LEDStatus, LEDStatusJSON, LabeledLedMode, LED_ON, LED_OFF, LED_PULSE,
@@ -46,9 +45,7 @@ export class LedDetailComponent implements OnInit, OnDestroy {
 
   constructor(
     private ledcontrolService: LedcontrolService,
-    private localStorage: LocalstorageService,
-    private activeRoute: ActivatedRoute) {
-    this.activeRoute.params.pipe(skip(1), takeUntil(this.destroy$)).subscribe(() => this.onRefresh());
+    private localStorage: LocalstorageService) {
   }
 
   async ngOnInit(): Promise<void> {
@@ -57,13 +54,19 @@ export class LedDetailComponent implements OnInit, OnDestroy {
     this.ledcontrolService.setDevice(settings.CurrentDevice);
 
     // Coalesce rapid edits into one write; a newer save cancels an in-flight one.
+    // A failed save must not error the outer pipe (that would kill all future
+    // saves), so it is caught per-request and dropped.
     this.save$.pipe(
       takeUntil(this.destroy$),
       debounceTime(300),
-      switchMap(() => this.ledcontrolService.saveStatus(this.getJson())),
+      switchMap(() => this.ledcontrolService.saveStatus(this.getJson()).pipe(
+        catchError((err) => {
+          console.error('Save failed: ' + err);
+          return EMPTY;
+        }),
+      )),
     ).subscribe({
       next: (res) => console.log('Saved LED status: ' + JSON.stringify(res)),
-      error: (err) => console.error('Save failed: ' + err),
     });
 
     this.onRefresh();

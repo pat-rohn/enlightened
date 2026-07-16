@@ -3,12 +3,25 @@
 // so the version shown in the app always reflects the running build.
 const fs = require('fs');
 const path = require('path');
+const { execSync } = require('child_process');
 
 const now = new Date();
 const pad = (n) => String(n).padStart(2, '0');
+
+let commit = '';
+try {
+  commit = execSync('git rev-parse --short HEAD', {
+    cwd: path.join(__dirname, '..'),
+    stdio: ['ignore', 'pipe', 'ignore'],
+  }).toString().trim();
+} catch {
+  // Not a git checkout (e.g. exported source) — omit the hash.
+}
+
 const stamp =
   `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ` +
-  `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+  `${pad(now.getHours())}:${pad(now.getMinutes())}` +
+  (commit ? ` (${commit})` : '');
 
 const out = path.join(__dirname, '..', 'src', 'environments', 'version.ts');
 fs.writeFileSync(

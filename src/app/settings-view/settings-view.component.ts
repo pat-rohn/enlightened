@@ -20,6 +20,8 @@ export class SettingsViewComponent implements OnInit {
   connectedDevice: Device = { Name: "init", Address: "0" }
   deviceConfig?: DeviceSettings;
   enableSave = true;
+  // Firmware version of the connected device; '' means old firmware (no /api/version).
+  firmwareVersion = '';
 
   readonly fieldDefs: Array<{
     key: keyof DeviceSettings;
@@ -79,6 +81,7 @@ export class SettingsViewComponent implements OnInit {
     } catch (err) {
       console.error(err);
     }
+    this.firmwareVersion = await this.ledcontrolService.getFirmwareVersion();
     this.cdr.markForCheck();
   }
 
@@ -122,6 +125,7 @@ export class SettingsViewComponent implements OnInit {
     } catch (err) {
       console.log(err);
     }
+    this.firmwareVersion = await this.ledcontrolService.getFirmwareVersion();
     this.enableSave = true;
     console.log("Enable Save")
     this.cdr.markForCheck();
@@ -239,6 +243,10 @@ export class SettingsViewComponent implements OnInit {
             this.deviceConfig = res;
             this.cdr.markForCheck();
             this.ledcontrolService.setDevice(newDevice)
+            this.ledcontrolService.getFirmwareVersion().then(version => {
+              this.firmwareVersion = version;
+              this.cdr.markForCheck();
+            })
             const foundDevice = this.findDevice(newDevice.Name)
             if (foundDevice == null) {
               this.localStorage.readSettings().then(newSettings => {

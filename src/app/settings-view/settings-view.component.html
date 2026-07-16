@@ -51,6 +51,10 @@
     <br />
 
     <div *ngIf="deviceConfig">
+      <ion-item>
+        <ion-label>Firmware</ion-label>
+        <ion-note slot="end">{{ firmwareVersion || 'unknown (old firmware)' }}</ion-note>
+      </ion-item>
       <ion-button id="present-alert" fill="outline">Reset WiFi</ion-button>
       <ion-alert
         trigger="present-alert"

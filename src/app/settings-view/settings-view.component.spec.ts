@@ -18,8 +18,10 @@ describe('SettingsViewComponent', () => {
   beforeEach(() => {
     ledSvc = jasmine.createSpyObj<LedcontrolService>('LedcontrolService', [
       'getDeviceSettings', 'applyDeviceSettings', 'restartDevice', 'setDevice',
+      'getFirmwareVersion',
     ]);
     ledSvc.getDeviceSettings.and.returnValue(of({ SensorID: 'test' } as any));
+    ledSvc.getFirmwareVersion.and.returnValue(Promise.resolve(''));
 
     storageSvc = jasmine.createSpyObj<LocalstorageService>(
       'LocalstorageService',

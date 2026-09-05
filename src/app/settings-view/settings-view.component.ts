@@ -35,6 +35,7 @@ export class SettingsViewComponent implements OnInit, OnDestroy {
     { key: 'ServerAddress',     label: 'ServerAddress',     type: 'text' },
     { key: 'WiFiName',          label: 'WiFiName',          type: 'text' },
     { key: 'WiFiPassword',      label: 'WiFiPassword',      type: 'password' },
+    { key: 'ApiToken',          label: 'API Token',          type: 'password' },
     { key: 'ShowWebpage',       label: 'ShowWebpage',       type: 'checkbox' },
     { key: 'IsConfigured',      label: 'IsConfigured',      type: 'checkbox' },
     { key: 'IsOfflineMode',     label: 'IsOfflineMode',     type: 'checkbox' },
@@ -47,11 +48,17 @@ export class SettingsViewComponent implements OnInit, OnDestroy {
     { key: 'DhtPin',            label: 'DhtPin',            type: 'number',  showWhen: { field: 'FindSensors' } },
     { key: 'SerialRX',          label: 'SerialRX',          type: 'number',  showWhen: { field: 'FindSensors' } },
     { key: 'SerialTX',          label: 'SerialTX',          type: 'number',  showWhen: { field: 'FindSensors' } },
+    { key: 'AnalogSensorPin0',  label: 'AnalogSensorPin0',   type: 'number' },
+    { key: 'AnalogSensorPin1',  label: 'AnalogSensorPin1',   type: 'number' },
+    { key: 'OneWirePin',        label: 'OneWirePin',         type: 'number' },
     { key: 'WindSensorPin',     label: 'WindSensorPin',     type: 'number' },
     { key: 'RainfallSensorPin', label: 'RainfallSensorPin', type: 'number' },
     { key: 'UseMQTT',           label: 'UseMQTT',           type: 'checkbox' },
     { key: 'MQTTPort',          label: 'MQTTPort',          type: 'number',  showWhen: { field: 'UseMQTT' } },
     { key: 'MQTTTopic',         label: 'MQTTTopic',         type: 'text',    showWhen: { field: 'UseMQTT' } },
+    { key: 'DeepSleepTime',     label: 'DeepSleepTime',      type: 'number' },
+    { key: 'BufferedValues',    label: 'BufferedValues',     type: 'number' },
+    { key: 'MeasureInterval',   label: 'MeasureInterval',    type: 'number' },
   ];
 
   isFieldVisible(field: { showWhen?: { field: keyof DeviceSettings; greaterThan?: number } }): boolean {
@@ -148,13 +155,22 @@ export class SettingsViewComponent implements OnInit, OnDestroy {
       this.enableSave = true;
       return;
     }
+    const apiToken = this.deviceConfig!.ApiToken;
     console.log(JSON.stringify(this.deviceConfig));
     this.ledcontrolService.applyDeviceSettings(this.deviceConfig!).pipe(
       switchMap(() => this.ledcontrolService.getDeviceSettings())
-    ).subscribe(res => {
-      this.deviceConfig = res;
-      this.enableSave = true;
-      this.cdr.markForCheck();
+    ).subscribe({
+      next: async res => {
+        await this.persistApiToken(apiToken);
+        this.deviceConfig = res;
+        this.enableSave = true;
+        this.cdr.markForCheck();
+      },
+      error: err => {
+        console.error(err);
+        this.enableSave = true;
+        this.cdr.markForCheck();
+      },
     });
   }
 
@@ -191,6 +207,27 @@ export class SettingsViewComponent implements OnInit, OnDestroy {
   private isValidDeviceAddress(address: string): boolean {
     // Accept IPv4, IPv4:port, or simple hostnames. Reject anything with whitespace or URL schemes.
     return /^[a-zA-Z0-9._-]+(:\d{1,5})?$/.test(address);
+  }
+
+  private async persistApiToken(apiToken: string): Promise<void> {
+    // The firmware redacts the configured token in GET responses. A blank
+    // form value therefore means "leave the locally stored auth token alone,"
+    // matching the firmware's blank-secret update semantics.
+    if (!apiToken) return;
+
+    const current = this.ledcontrolService.currentDevice;
+    if (!current) return;
+
+    current.ApiToken = apiToken;
+    for (const device of this.settings.KnownDevices) {
+      if (device.Address === current.Address) {
+        device.ApiToken = apiToken;
+      }
+    }
+    if (this.settings.CurrentDevice.Address === current.Address) {
+      this.settings.CurrentDevice.ApiToken = apiToken;
+    }
+    await this.localStorage.writeSettings(this.settings);
   }
 
   private isValidUrl(url: string): boolean {

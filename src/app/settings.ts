@@ -3,6 +3,7 @@
 export interface Device {
   Address: string;
   Name: string;
+  ApiToken?: string;
 }
 
 export interface Settings {
@@ -40,12 +41,18 @@ export interface DeviceSettings {
   SensorID: string;
   WiFiName: string;
   WiFiPassword: string;
+  ApiToken: string;
+  HasWiFiPassword?: boolean;
+  HasApiToken?: boolean;
   DhtPin: number;
   SerialRX: number;
   SerialTX: number;
+  AnalogSensorPin0: number;
+  AnalogSensorPin1: number;
   WindSensorPin: number;
   RainfallSensorPin: number;
   LEDPin: number;
+  OneWirePin: number;
   Button1: number;
   Button2: number;
   Button2GetURL: string
@@ -60,4 +67,7 @@ export interface DeviceSettings {
   LightLow: Light;
   LightMedium: Light;
   LightHigh: Light;
+  DeepSleepTime: number;
+  BufferedValues: number;
+  MeasureInterval: number;
 }

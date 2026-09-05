@@ -16,12 +16,6 @@ export class LedcontrolService {
   currentDevice?: Device;
   ledStatus: LEDStatus;
 
-  httpOptions = {
-    headers: new HttpHeaders({
-      'Content-Type': 'application/x-www-form-urlencoded'
-    })
-  };
-
   constructor(private http: HttpClient, public toastController: ToastController) {
     this.ledStatus = DEFAULT_LED_STATUS;
     console.log('led message ' + this.ledStatus.message);
@@ -32,10 +26,21 @@ export class LedcontrolService {
     console.log('ledcontrol:set device' + JSON.stringify(this.currentDevice));
   }
 
+  private requestOptions(device = this.currentDevice, contentType?: string) {
+    let headers = new HttpHeaders();
+    if (contentType) {
+      headers = headers.set('Content-Type', contentType);
+    }
+    if (device?.ApiToken) {
+      headers = headers.set('X-Authorization', device.ApiToken);
+    }
+    return { headers };
+  }
+
   getLedStatus(): Observable<LEDStatusJSON> {
     const url = "http://" + this.currentDevice?.Address + "/api/led";
     console.log('get led status from:' + url);
-    return this.http.get<LEDStatusJSON>(url).pipe(
+    return this.http.get<LEDStatusJSON>(url, this.requestOptions()).pipe(
       tap(_ => console.log('fetched led status')),
       catchError(this.handleError<LEDStatusJSON>('getLedStatus'))
     );
@@ -50,7 +55,7 @@ export class LedcontrolService {
       "," + ledstatus.Green +
       "," + ledstatus.Blue +
       "]")
-    return this.http.post(url, ledstatus, this.httpOptions).pipe(
+    return this.http.post(url, ledstatus, this.requestOptions(undefined, 'application/json')).pipe(
       timeout(3000),
       tap(_ => console.log(`updated led ` + ledstatus.Message)),
       catchError(this.handleError<any>('saveStatus'))
@@ -61,11 +66,7 @@ export class LedcontrolService {
     const url = "http://" + this.currentDevice?.Address + "/api/button" + nr
     console.log('Button:' + nr + 'pressed');
 
-    return this.http.get<any>(url, {
-      headers: new HttpHeaders({
-        'Content-Type': 'application/json'
-      })
-    }).pipe(
+    return this.http.get<any>(url, this.requestOptions(undefined, 'application/json')).pipe(
       timeout(3000),
       tap(_ => console.log(`updated led `)),
       catchError(this.handleError<any>('pressButton' + nr))
@@ -79,7 +80,7 @@ export class LedcontrolService {
       url = "http://" + device.Address + "/api/config";
     }
     console.log('get device settings from:' + url);
-    return this.http.get<DeviceSettings>(url).pipe(
+    return this.http.get<DeviceSettings>(url, this.requestOptions(device)).pipe(
       timeout(2000),
       tap(_ => console.log('fetched device settings')),
       catchError(this.handleError<DeviceSettings>('Get Device Settings'))
@@ -89,7 +90,7 @@ export class LedcontrolService {
   getTime(): Observable<string> {
     const url = "http://" + this.currentDevice?.Address + "/api/time";
     console.log('get time from:' + url);
-    return this.http.get(url, { responseType: 'text' }).pipe(
+    return this.http.get(url, { ...this.requestOptions(), responseType: 'text' }).pipe(
       timeout(1000),
       tap(_ => console.log('fetched device settings')),
       catchError(this.handleError<string>('Get Time')));
@@ -99,7 +100,7 @@ export class LedcontrolService {
     const url = "http://" + this.currentDevice?.Address + "/api/config"
     console.log('set device settings to :' + url);
     console.log(`Apply: ` + JSON.stringify(deviceSettings))
-    return this.http.put(url, deviceSettings, this.httpOptions).pipe(
+    return this.http.put(url, deviceSettings, this.requestOptions(undefined, 'application/json')).pipe(
       catchError(this.handleError<any>('Apply Device Settings'))
     );
   }
@@ -107,7 +108,7 @@ export class LedcontrolService {
   restartDevice(): Observable<any> {
     const url = "http://" + this.currentDevice?.Address + "/restart"
     console.log('restart:' + url);
-    return this.http.get(url, this.httpOptions).pipe(
+    return this.http.get(url, this.requestOptions()).pipe(
       catchError(this.handleError<any>('Restart'))
     );
   }
@@ -117,7 +118,7 @@ export class LedcontrolService {
     const url = "http://" + this.currentDevice?.Address + "/api/config"
     console.log('set device settings to :' + url);
     console.log(`Apply: ` + JSON.stringify(deviceSettings))
-    return this.http.put(url, deviceSettings, this.httpOptions).pipe(
+    return this.http.put(url, deviceSettings, this.requestOptions(undefined, 'application/json')).pipe(
       catchError(this.handleError<any>('Apply Device Settings'))
     );
   }

@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
-import { Observable, throwError, firstValueFrom, from } from 'rxjs';
+import { Observable, throwError, firstValueFrom } from 'rxjs';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { catchError, timeout, tap, switchMap } from 'rxjs/operators';
+import { catchError, timeout, tap } from 'rxjs/operators';
 
 import { LEDStatus, LEDStatusJSON } from '../ledstatus';
 import { DEFAULT_LED_STATUS } from '../ledstatus-mockup';
@@ -73,26 +73,15 @@ export class LedcontrolService {
   // Content-Type for body-carrying requests, per detected firmware.
   //
   // OLD firmware (no /api/version) only exposes a request body as a POST param
-  // when the Content-Type is application/x-www-form-urlencoded — the whole JSON
-  // body then arrives as the value of a single "body" param. With any other
-  // Content-Type the body is dropped, params() == 0, and the firmware silently
-  // writes nothing.
+  // when the Content-Type is application/x-www-form-urlencoded; with any other
+  // Content-Type the body is dropped and the firmware silently writes nothing.
+  // So legacy stays the default until the probe answers.
   //
-  // NEW firmware reads raw request bodies, is detected via /api/version, and
-  // then gets proper application/json requests. It still accepts the legacy
-  // encoding, so defaulting to legacy while the probe is in flight is safe.
+  // NEW firmware reads raw request bodies and is detected via /api/version.
+  // It accepts BOTH encodings (verified against 2026-09-07-dc2a828), so the
+  // pre-probe window is harmless and no request needs to wait on the probe.
   private get writeContentType(): string {
     return this.useRawJson ? 'application/json' : 'application/x-www-form-urlencoded';
-  }
-
-  // Body-carrying requests must wait for the firmware probe to settle. Sending
-  // the legacy encoding to new firmware makes it parse the JSON as form params
-  // and see an empty body (400 "No input received"), and sending JSON to old
-  // firmware makes it drop the body and silently write nothing. The probe is
-  // already in flight from setDevice(), so this usually resolves immediately.
-  private write<T>(send: (options: { headers: HttpHeaders }) => Observable<T>): Observable<T> {
-    return from(this.versionProbe).pipe(
-      switchMap(() => send(this.requestOptions(undefined, this.writeContentType))));
   }
 
   private requestOptions(device = this.currentDevice, contentType?: string) {
@@ -124,7 +113,7 @@ export class LedcontrolService {
       "," + ledstatus.Green +
       "," + ledstatus.Blue +
       "]")
-    return this.write(options => this.http.post(url, ledstatus, options)).pipe(
+    return this.http.post(url, ledstatus, this.requestOptions(undefined, this.writeContentType)).pipe(
       timeout(3000),
       tap(_ => console.log(`updated led ` + ledstatus.Message)),
       catchError(this.handleError<any>('saveStatus'))
@@ -169,7 +158,7 @@ export class LedcontrolService {
     const url = "http://" + this.currentDevice?.Address + "/api/config"
     console.log('set device settings to :' + url);
     console.log(`Apply: ` + JSON.stringify(deviceSettings))
-    return this.write(options => this.http.put(url, deviceSettings, options)).pipe(
+    return this.http.put(url, deviceSettings, this.requestOptions(undefined, this.writeContentType)).pipe(
       catchError(this.handleError<any>('Apply Device Settings'))
     );
   }
@@ -188,7 +177,7 @@ export class LedcontrolService {
     const url = "http://" + this.currentDevice?.Address + "/api/config"
     console.log('set device settings to :' + url);
     console.log(`Apply: ` + JSON.stringify(deviceSettings))
-    return this.write(options => this.http.put(url, deviceSettings, options)).pipe(
+    return this.http.put(url, deviceSettings, this.requestOptions(undefined, this.writeContentType)).pipe(
       catchError(this.handleError<any>('Apply Device Settings'))
     );
   }

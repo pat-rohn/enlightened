@@ -6,6 +6,7 @@ import { of, throwError } from 'rxjs';
 import { SettingsViewComponent } from './settings-view.component';
 import { LedcontrolService } from '../services/ledcontrol.service';
 import { LocalstorageService } from '../services/localstorage.service';
+import { Device } from '../settings';
 
 describe('SettingsViewComponent', () => {
   let component: SettingsViewComponent;
@@ -93,5 +94,25 @@ describe('SettingsViewComponent', () => {
 
     expect(storageSvc.writeSettings).not.toHaveBeenCalled();
     expect(component.settings.CurrentDevice).toEqual(device);
+  });
+
+  // The firmware token-gates every mutating endpoint, the config PUT included.
+  // Persisting the token only after a successful apply was a chicken-and-egg
+  // trap: the apply 401s because the token is not stored yet, and the token the
+  // user just typed was then discarded, so the app could never authenticate.
+  it('persists a newly entered API token even when the apply is rejected', async () => {
+    const current: Device = { Name: 'test', Address: '1.2.3.4' };
+    ledSvc.currentDevice = current;
+    component.settings = { CurrentDevice: current, KnownDevices: [current] } as any;
+    ledSvc.applyDeviceSettings.and.returnValue(
+      throwError(() => ({ status: 401, message: 'unauthorized' })));
+    component.deviceConfig = { ApiToken: 'secret-token' } as any;
+
+    await component.clickedApplyDeviceConfig();
+
+    expect(current.ApiToken).toBe('secret-token');
+    expect(component.settings.CurrentDevice.ApiToken).toBe('secret-token');
+    expect(storageSvc.writeSettings).toHaveBeenCalled();
+    expect(component.enableSave).toBeTrue();
   });
 });

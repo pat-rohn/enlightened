@@ -153,10 +153,14 @@ export class SettingsViewComponent implements OnInit {
     }
     const apiToken = this.deviceConfig!.ApiToken;
     console.log(JSON.stringify(this.deviceConfig));
+    // Store the token locally BEFORE the write. Every mutating endpoint is
+    // token-gated, so persisting only after a successful apply is a
+    // chicken-and-egg trap: the apply itself 401s, and the token the user
+    // just typed is never saved — leaving no way to ever authenticate.
+    await this.persistApiToken(apiToken);
     try {
       await firstValueFrom(this.ledcontrolService.applyDeviceSettings(this.deviceConfig!));
       const res = await firstValueFrom(this.ledcontrolService.getDeviceSettings());
-      await this.persistApiToken(apiToken);
       if (res != null) {
         this.deviceConfig = res;
       }

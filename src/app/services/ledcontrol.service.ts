@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
-import { Observable, throwError, firstValueFrom } from 'rxjs';
+import { Observable, throwError, firstValueFrom, from } from 'rxjs';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { catchError, timeout, tap } from 'rxjs/operators';
+import { catchError, timeout, tap, switchMap } from 'rxjs/operators';
 
 import { LEDStatus, LEDStatusJSON } from '../ledstatus';
 import { DEFAULT_LED_STATUS } from '../ledstatus-mockup';
@@ -85,6 +85,16 @@ export class LedcontrolService {
     return this.useRawJson ? 'application/json' : 'application/x-www-form-urlencoded';
   }
 
+  // Body-carrying requests must wait for the firmware probe to settle. Sending
+  // the legacy encoding to new firmware makes it parse the JSON as form params
+  // and see an empty body (400 "No input received"), and sending JSON to old
+  // firmware makes it drop the body and silently write nothing. The probe is
+  // already in flight from setDevice(), so this usually resolves immediately.
+  private write<T>(send: (options: { headers: HttpHeaders }) => Observable<T>): Observable<T> {
+    return from(this.versionProbe).pipe(
+      switchMap(() => send(this.requestOptions(undefined, this.writeContentType))));
+  }
+
   private requestOptions(device = this.currentDevice, contentType?: string) {
     let headers = new HttpHeaders();
     if (contentType) {
@@ -114,7 +124,7 @@ export class LedcontrolService {
       "," + ledstatus.Green +
       "," + ledstatus.Blue +
       "]")
-    return this.http.post(url, ledstatus, this.requestOptions(undefined, this.writeContentType)).pipe(
+    return this.write(options => this.http.post(url, ledstatus, options)).pipe(
       timeout(3000),
       tap(_ => console.log(`updated led ` + ledstatus.Message)),
       catchError(this.handleError<any>('saveStatus'))
@@ -159,7 +169,7 @@ export class LedcontrolService {
     const url = "http://" + this.currentDevice?.Address + "/api/config"
     console.log('set device settings to :' + url);
     console.log(`Apply: ` + JSON.stringify(deviceSettings))
-    return this.http.put(url, deviceSettings, this.requestOptions(undefined, this.writeContentType)).pipe(
+    return this.write(options => this.http.put(url, deviceSettings, options)).pipe(
       catchError(this.handleError<any>('Apply Device Settings'))
     );
   }
@@ -178,7 +188,7 @@ export class LedcontrolService {
     const url = "http://" + this.currentDevice?.Address + "/api/config"
     console.log('set device settings to :' + url);
     console.log(`Apply: ` + JSON.stringify(deviceSettings))
-    return this.http.put(url, deviceSettings, this.requestOptions(undefined, this.writeContentType)).pipe(
+    return this.write(options => this.http.put(url, deviceSettings, options)).pipe(
       catchError(this.handleError<any>('Apply Device Settings'))
     );
   }
